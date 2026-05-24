@@ -1,0 +1,41 @@
+# ArchDefend — Production Requirements
+# Only packages actually used in the codebase
+
+# ── Web framework ─────────────────────────────────────────────────────────────
+fastapi==0.115.0
+uvicorn[standard]==0.30.0
+pydantic==2.8.0
+pydantic-settings==2.4.0
+python-multipart==0.0.9
+starlette==0.41.0
+
+# ── Database ──────────────────────────────────────────────────────────────────
+sqlalchemy==2.0.36
+asyncpg==0.29.0
+alembic==1.13.2
+pgvector==0.3.2
+
+# ── Cache ─────────────────────────────────────────────────────────────────────
+redis==5.0.8
+
+# ── Auth ─────────────────────────────────────────────────────────────────────
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+httpx==0.27.2
+
+# ── Graph analysis ────────────────────────────────────────────────────────────
+networkx==3.3
+
+# ── Export engine ─────────────────────────────────────────────────────────────
+# WeasyPrint needs system libs — handled in render.yaml build command
+weasyprint==62.3
+python-pptx==1.0.0
+markdown==3.7
+jinja2==3.1.4
+Pillow==10.4.0
+
+# ── Security ──────────────────────────────────────────────────────────────────
+cryptography==43.0.1
+
+# ── Monitoring ────────────────────────────────────────────────────────────────
+sentry-sdk[fastapi]==2.14.0

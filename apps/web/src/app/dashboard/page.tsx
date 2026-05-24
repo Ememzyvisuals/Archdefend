@@ -1,0 +1,710 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Shield, Plus, Search, GitBranch, Network, Lock, Eye,
+  Download, BarChart3, Code2, History, Settings, LogOut,
+  CheckCircle, AlertTriangle, ArrowRight, ChevronRight,
+  FileCode, Layers, Globe, Cpu, Clock, RefreshCw, X,
+  ChevronDown, Copy, Check, Filter,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { useAuthStore, useAnalysisStore, useUIStore } from '@/store';
+import { api, ArchDefendAPI } from '@/lib/api';
+import type { AnalysisReport, SecurityFinding, InterviewQuestion } from '@/types';
+
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
+
+const NAV = [
+  { id: 'overview',   label: 'Overview',      icon: BarChart3  },
+  { id: 'graph',      label: 'Dependency Graph', icon: Network },
+  { id: 'security',   label: 'Security',      icon: Lock       },
+  { id: 'api',        label: 'API Inventory', icon: Code2      },
+  { id: 'interview',  label: 'Interview Prep',icon: Eye        },
+  { id: 'export',     label: 'Export',        icon: Download   },
+];
+
+function Sidebar() {
+  const { user, logout } = useAuthStore();
+  const { activeTab, setActiveTab } = useUIStore();
+  const { history, activeAnalysisId, clearActive } = useAnalysisStore();
+
+  return (
+    <aside className="sidebar">
+      {/* Logo */}
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8, height: 48 }}>
+        <div style={{ width: 22, height: 22, borderRadius: 4, background: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Shield size={12} style={{ color: 'var(--bg)' }} strokeWidth={2.5}/>
+        </div>
+        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)', letterSpacing: '-0.01em' }}>ArchDefend</span>
+      </div>
+
+      {/* New Analysis */}
+      <div style={{ padding: '10px 8px 6px' }}>
+        <button onClick={clearActive} className="btn btn-secondary" style={{ width: '100%', justifyContent: 'flex-start', height: 30, fontSize: 12 }}>
+          <Plus size={12}/> New Analysis
+        </button>
+      </div>
+
+      {/* Report nav */}
+      {activeAnalysisId && (
+        <div style={{ padding: '4px 0 8px' }}>
+          <div className="sidebar-section">Report</div>
+          {NAV.map(item => {
+            const Icon = item.icon;
+            return (
+              <button key={item.id} onClick={() => setActiveTab(item.id)}
+                className={`sidebar-item ${activeTab === item.id ? 'active' : ''}`}
+                style={{ background: 'none', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer' }}>
+                <Icon size={14}/>{item.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* History */}
+      {history.length > 0 && (
+        <div style={{ padding: '4px 0 8px', flex: 1, overflowY: 'auto' }}>
+          <div className="sidebar-section">Recent</div>
+          {history.slice(0, 8).map(a => (
+            <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px', height: 30 }}>
+              <GitBranch size={11} style={{ color: 'var(--fg-4)', flexShrink: 0 }}/>
+              <span style={{ fontSize: 12, color: 'var(--fg-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                {a.repo_name || a.repo_url.split('/').slice(-1)[0]}
+              </span>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: a.status === 'completed' ? 'var(--success)' : a.status === 'failed' ? 'var(--error)' : 'var(--warning)' }}/>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* User */}
+      <div style={{ borderTop: '1px solid var(--border)', padding: '10px 8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px' }}>
+          {user?.avatar_url
+            ? <img src={user.avatar_url} alt="" style={{ width: 24, height: 24, borderRadius: '50%', border: '1px solid var(--border-2)', flexShrink: 0 }}/>
+            : <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--bg-3)', border: '1px solid var(--border-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: 'var(--fg-2)', flexShrink: 0 }}>{user?.email?.[0]?.toUpperCase()}</div>
+          }
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {user?.github_username || user?.email?.split('@')[0]}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--fg-3)', fontFamily: 'JetBrains Mono, monospace' }}>
+              {user?.credits ?? 0} credits · {user?.plan?.toUpperCase()}
+            </div>
+          </div>
+          <button onClick={logout} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-4)', padding: 4, borderRadius: 4, display: 'flex', alignItems: 'center' }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--error)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-4)')}>
+            <LogOut size={13}/>
+          </button>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+// ─── Progress bar ─────────────────────────────────────────────────────────────
+
+function ProgressToast({ message, progress }: { message: string; progress: number }) {
+  return (
+    <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 999, width: 320, background: 'var(--bg-1)', border: '1px solid var(--border-2)', borderRadius: 8, padding: '14px 16px', boxShadow: '0 8px 24px rgba(0,0,0,0.6)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+        <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--fg)' }}>Analyzing repository…</span>
+        <span className="text-mono" style={{ fontSize: 11, color: 'var(--fg-3)' }}>{progress}%</span>
+      </div>
+      <div style={{ height: 2, background: 'var(--bg-3)', borderRadius: 1, overflow: 'hidden', marginBottom: 8 }}>
+        <motion.div style={{ height: '100%', background: 'var(--accent)', borderRadius: 1 }}
+          animate={{ width: `${progress}%` }} transition={{ duration: 0.5 }}/>
+      </div>
+      <p style={{ fontSize: 11, color: 'var(--fg-3)', fontFamily: 'JetBrains Mono, monospace' }}>{message}</p>
+    </div>
+  );
+}
+
+// ─── New Analysis Input ────────────────────────────────────────────────────────
+
+function AnalysisInput({ onStart }: { onStart: (url: string) => void }) {
+  const [url, setUrl] = useState('');
+  const [opts, setOpts] = useState({ security: true, interview: true });
+  const { isAnalyzing, activeStatus } = useAnalysisStore();
+
+  const submit = () => {
+    if (!url.trim()) { toast.error('Enter a GitHub repository URL'); return; }
+    if (!url.includes('github.com')) { toast.error('Only GitHub repositories are supported'); return; }
+    onStart(url.trim());
+  };
+
+  const examples = ['vercel/next.js', 'tiangolo/fastapi', 'django/django', 'expressjs/express'];
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 48 }}>
+      <div style={{ width: '100%', maxWidth: 560 }}>
+        {/* Header */}
+        <div style={{ marginBottom: 32 }}>
+          <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.025em', color: 'var(--fg)', marginBottom: 8 }}>
+            Analyze a repository
+          </h1>
+          <p style={{ fontSize: 14, color: 'var(--fg-3)' }}>
+            Paste a GitHub URL to get architecture analysis, security findings, and exports.
+          </p>
+        </div>
+
+        {/* Input */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          <div style={{ position: 'relative', flex: 1 }}>
+            <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--fg-3)', pointerEvents: 'none' }}>
+              <Search size={13}/>
+            </span>
+            <input type="url" value={url} onChange={e => setUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()}
+              placeholder="https://github.com/owner/repository"
+              className="input input-lg text-mono" style={{ paddingLeft: 32, width: '100%', fontSize: 13 }}
+              disabled={isAnalyzing}/>
+          </div>
+          <button onClick={submit} disabled={!url.trim() || isAnalyzing} className="btn btn-primary"
+            style={{ height: 40, padding: '0 20px', opacity: (!url.trim() || isAnalyzing) ? 0.5 : 1 }}>
+            {isAnalyzing
+              ? <span className="w-3.5 h-3.5 border-2 border-black/20 border-t-black rounded-full animate-spin"/>
+              : <><span>Analyze</span><ArrowRight size={13}/></>}
+          </button>
+        </div>
+
+        {/* Options */}
+        <div style={{ display: 'flex', gap: 20, marginBottom: 28 }}>
+          {[{ k: 'security', l: 'Security Analysis', d: '+15cr' }, { k: 'interview', l: 'Interview Prep', d: '+5cr' }].map(o => (
+            <label key={o.k} style={{ display: 'flex', alignItems: 'center', gap: 7, cursor: 'pointer' }}>
+              <div onClick={() => setOpts(p => ({ ...p, [o.k]: !p[o.k as keyof typeof p] }))}
+                style={{ width: 14, height: 14, borderRadius: 3, border: `1px solid ${opts[o.k as keyof typeof opts] ? 'var(--accent)' : 'var(--border-3)'}`, background: opts[o.k as keyof typeof opts] ? 'var(--accent)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .15s', cursor: 'pointer' }}>
+                {opts[o.k as keyof typeof opts] && <Check size={9} style={{ color: 'white' }}/>}
+              </div>
+              <span style={{ fontSize: 13, color: 'var(--fg-2)' }}>{o.l}</span>
+              <span className="text-mono" style={{ fontSize: 11, color: 'var(--fg-4)' }}>{o.d}</span>
+            </label>
+          ))}
+        </div>
+
+        {/* Divider */}
+        <div className="divider" style={{ marginBottom: 24 }}/>
+
+        {/* Example repos */}
+        <p style={{ fontSize: 12, color: 'var(--fg-4)', marginBottom: 12 }}>Try with a popular repository:</p>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {examples.map(r => (
+            <button key={r} onClick={() => setUrl(`https://github.com/${r}`)} disabled={isAnalyzing}
+              className="btn btn-secondary btn-sm text-mono" style={{ fontSize: 11 }}>
+              {r}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Progress toast */}
+      <AnimatePresence>
+        {isAnalyzing && activeStatus && (
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 16 }}>
+            <ProgressToast message={activeStatus.message} progress={activeStatus.progress}/>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ─── Report header ────────────────────────────────────────────────────────────
+
+function ReportHeader({ report, analysisId }: { report: AnalysisReport; analysisId: string }) {
+  const { setActiveTab } = useUIStore();
+  return (
+    <div style={{ padding: '0 24px', borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
+      {/* Breadcrumb */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, height: 40, borderBottom: '1px solid var(--border)' }}>
+        <span style={{ fontSize: 12, color: 'var(--fg-3)' }}>Dashboard</span>
+        <ChevronRight size={12} style={{ color: 'var(--fg-4)' }}/>
+        <span style={{ fontSize: 12, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace' }}>
+          {report.repo_name || analysisId.slice(0, 8)}
+        </span>
+        <span className="badge badge-success" style={{ marginLeft: 4 }}>
+          <span className="status-dot status-dot-success" style={{ width: 5, height: 5 }}/>
+          complete
+        </span>
+      </div>
+
+      {/* Tab nav */}
+      <div className="tab-nav" style={{ gap: 0, borderBottom: 'none' }}>
+        {NAV.map(item => {
+          const { activeTab } = useUIStore();
+          const Icon = item.icon;
+          return (
+            <button key={item.id} onClick={() => setActiveTab(item.id)}
+              className={`tab-item ${activeTab === item.id ? 'active' : ''}`}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Icon size={13}/>{item.label}
+            </button>
+          );
+        })}
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, paddingBottom: 6 }}>
+          <button onClick={() => api.downloadExport(analysisId, 'pdf')} className="btn btn-secondary btn-sm">
+            <Download size={11}/> PDF
+          </button>
+          <button onClick={() => setActiveTab('export')} className="btn btn-secondary btn-sm">
+            All exports
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Overview tab ─────────────────────────────────────────────────────────────
+
+function OverviewTab({ report }: { report: AnalysisReport }) {
+  const { setActiveTab } = useUIStore();
+  const criticals = report.security_findings?.filter(f => f.severity === 'critical') ?? [];
+  const highs = report.security_findings?.filter(f => f.severity === 'high') ?? [];
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+      {/* Score row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 1 }}>
+        {[
+          { label: 'Scalability',       value: `${report.scalability_score ?? '—'}/100`, sub: 'architecture score' },
+          { label: 'Production Ready',  value: `${report.production_readiness_score ?? '—'}/100`, sub: 'readiness score' },
+          { label: 'Security Findings', value: String(report.security_findings?.length ?? 0), sub: `${criticals.length} critical, ${highs.length} high` },
+          { label: 'Files Analyzed',    value: String(report.file_count ?? 0), sub: Object.keys(report.language_stats ?? {}).slice(0,3).join(', ') },
+        ].map((s, i) => (
+          <motion.div key={s.label} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.06 }}
+            style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)', padding: '20px 24px' }}>
+            <p style={{ fontSize: 11, color: 'var(--fg-3)', marginBottom: 6 }}>{s.label}</p>
+            <p style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', marginBottom: 2 }}>{s.value}</p>
+            <p style={{ fontSize: 11, color: 'var(--fg-4)', fontFamily: 'JetBrains Mono, monospace' }}>{s.sub}</p>
+          </motion.div>
+        ))}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 1 }}>
+        {/* Architecture summary */}
+        <div style={{ background: 'var(--bg)', padding: '24px', borderBottom: '1px solid var(--border)' }}>
+          <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)', marginBottom: 12 }}>Architecture Summary</h3>
+          <p style={{ fontSize: 13, color: 'var(--fg-3)', lineHeight: 1.7 }}>
+            {report.architecture_summary || 'No summary generated.'}
+          </p>
+        </div>
+
+        {/* Tech stack */}
+        <div style={{ background: 'var(--bg)', padding: '24px', borderBottom: '1px solid var(--border)' }}>
+          <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)', marginBottom: 12 }}>Tech Stack</h3>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {(report.tech_stack ?? []).map(t => (
+              <span key={t} className="badge badge-neutral text-mono" style={{ fontSize: 11 }}>{t}</span>
+            ))}
+            {!report.tech_stack?.length && <span style={{ fontSize: 12, color: 'var(--fg-4)' }}>Not detected</span>}
+          </div>
+
+          <div style={{ marginTop: 20 }}>
+            <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)', marginBottom: 12 }}>Languages</h3>
+            {Object.entries(report.language_stats ?? {}).slice(0, 5).map(([lang, count]) => {
+              const total = Object.values(report.language_stats ?? {}).reduce((a, b) => a + b, 0);
+              const pct = Math.round((count / total) * 100);
+              return (
+                <div key={lang} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <span className="text-mono" style={{ fontSize: 11, color: 'var(--fg-3)', width: 80, flexShrink: 0 }}>{lang}</span>
+                  <div style={{ flex: 1, height: 3, background: 'var(--bg-3)', borderRadius: 1.5, overflow: 'hidden' }}>
+                    <motion.div style={{ height: '100%', background: 'var(--fg-3)', borderRadius: 1.5 }}
+                      initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8, delay: 0.2 }}/>
+                  </div>
+                  <span className="text-mono" style={{ fontSize: 11, color: 'var(--fg-4)', width: 28, textAlign: 'right' }}>{pct}%</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Critical security alert */}
+      {criticals.length > 0 && (
+        <div style={{ background: 'rgba(220,0,0,0.04)', border: '1px solid rgba(220,0,0,0.15)', borderRadius: 0, padding: '16px 24px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <AlertTriangle size={14} style={{ color: 'var(--error)', flexShrink: 0 }}/>
+            <div>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--error)' }}>{criticals.length} critical security issue{criticals.length !== 1 ? 's' : ''} found</span>
+              <span style={{ fontSize: 12, color: 'var(--fg-3)', marginLeft: 8 }}>{criticals.map(f => f.id).join(', ')}</span>
+            </div>
+          </div>
+          <button onClick={() => setActiveTab('security')} className="btn btn-danger btn-sm">View findings</button>
+        </div>
+      )}
+
+      {/* Recommendations */}
+      {(report.recommendations?.length ?? 0) > 0 && (
+        <div style={{ background: 'var(--bg)', padding: '24px' }}>
+          <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)', marginBottom: 16 }}>Recommendations</h3>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {report.recommendations!.slice(0, 5).map((r, i) => {
+              const pColors: Record<string, string> = { critical: 'var(--error)', high: 'var(--warning)', medium: 'var(--fg-2)', low: 'var(--fg-3)' };
+              return (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 0', borderBottom: i < 4 ? '1px solid var(--border)' : 'none' }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: pColors[r.priority] ?? 'var(--fg-4)', flexShrink: 0, marginTop: 6 }}/>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--fg)', marginBottom: 2 }}>{r.title}</p>
+                    <p style={{ fontSize: 12, color: 'var(--fg-3)' }}>{r.description}</p>
+                  </div>
+                  <span className="badge badge-neutral" style={{ fontSize: 10, flexShrink: 0 }}>{r.effort}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Security tab ─────────────────────────────────────────────────────────────
+
+const SEV_ORDER = ['critical', 'high', 'medium', 'low', 'info'] as const;
+const SEV_COLORS: Record<string, string> = { critical: 'var(--error)', high: 'var(--warning)', medium: '#f5a623', low: 'var(--success)', info: 'var(--accent)' };
+
+function SecurityTab({ findings }: { findings: SecurityFinding[] }) {
+  const [filter, setFilter] = useState('all');
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  const counts = Object.fromEntries(SEV_ORDER.map(s => [s, findings.filter(f => f.severity === s).length]));
+  const filtered = filter === 'all' ? [...findings].sort((a, b) => SEV_ORDER.indexOf(a.severity as any) - SEV_ORDER.indexOf(b.severity as any)) : findings.filter(f => f.severity === filter);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      {/* Summary bar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 24px', borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
+        <button onClick={() => setFilter('all')}
+          className={`btn btn-sm ${filter === 'all' ? 'btn-secondary' : 'btn-ghost'}`}>
+          All <span className="text-mono" style={{ fontSize: 10, marginLeft: 4 }}>{findings.length}</span>
+        </button>
+        {SEV_ORDER.map(sev => counts[sev] > 0 && (
+          <button key={sev} onClick={() => setFilter(filter === sev ? 'all' : sev)}
+            className={`btn btn-sm ${filter === sev ? 'btn-secondary' : 'btn-ghost'}`}
+            style={{ color: filter !== sev ? SEV_COLORS[sev] : undefined }}>
+            <span style={{ textTransform: 'capitalize' }}>{sev}</span>
+            <span className="text-mono" style={{ fontSize: 10, marginLeft: 4 }}>{counts[sev]}</span>
+          </button>
+        ))}
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="empty-state">
+          <CheckCircle size={32} style={{ color: 'var(--success)', marginBottom: 12 }}/>
+          <h3>{findings.length === 0 ? 'No security issues found' : `No ${filter} issues`}</h3>
+          <p>{findings.length === 0 ? 'Static analysis found no vulnerabilities in this codebase.' : 'Try a different filter above.'}</p>
+        </div>
+      ) : (
+        <div>
+          {filtered.map((f, i) => {
+            const id = `${f.id}-${i}`;
+            const isOpen = expanded === id;
+            return (
+              <div key={id} style={{ borderBottom: '1px solid var(--border)', background: isOpen ? 'var(--bg-1)' : 'var(--bg)' }}>
+                <button onClick={() => setExpanded(isOpen ? null : id)}
+                  style={{ width: '100%', background: 'none', border: 'none', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 24px', cursor: 'pointer', textAlign: 'left' }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: SEV_COLORS[f.severity] ?? 'var(--fg-4)', flexShrink: 0 }}/>
+                  <span className="badge" style={{ fontSize: 10, background: 'transparent', border: `1px solid ${SEV_COLORS[f.severity]}`, color: SEV_COLORS[f.severity], padding: '1px 6px', minWidth: 52, justifyContent: 'center', flexShrink: 0 }}>
+                    {f.severity.toUpperCase()}
+                  </span>
+                  <span className="text-mono" style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)', flex: 1 }}>{f.id}</span>
+                  <span className="text-mono" style={{ fontSize: 11, color: 'var(--fg-4)' }}>{f.file}{f.line ? `:${f.line}` : ''}</span>
+                  {f.cwe && <span className="badge badge-neutral text-mono" style={{ fontSize: 10 }}>{f.cwe}</span>}
+                  <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.15 }} style={{ color: 'var(--fg-4)', flexShrink: 0 }}>
+                    <ChevronDown size={13}/>
+                  </motion.div>
+                </button>
+                <AnimatePresence>
+                  {isOpen && (
+                    <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} transition={{ duration: 0.18 }} style={{ overflow: 'hidden' }}>
+                      <div style={{ padding: '0 24px 20px 52px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        <p style={{ fontSize: 13, color: 'var(--fg-2)', lineHeight: 1.65 }}>{f.description}</p>
+                        {f.snippet && (
+                          <div className="code-block">
+                            <div className="code-block-header">{f.file}{f.line ? `:${f.line}` : ''}</div>
+                            <pre style={{ padding: '10px 14px', fontSize: 12, color: '#ef4444', background: 'var(--bg-1)', margin: 0, overflow: 'auto' }}>{f.snippet}</pre>
+                          </div>
+                        )}
+                        {f.remediation && (
+                          <div style={{ padding: '10px 14px', background: 'rgba(0,179,65,0.06)', border: '1px solid rgba(0,179,65,0.15)', borderRadius: 6 }}>
+                            <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--success)', marginBottom: 4 }}>REMEDIATION</p>
+                            <p style={{ fontSize: 13, color: 'var(--fg-3)', lineHeight: 1.65 }}>{f.remediation}</p>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── API Inventory tab ────────────────────────────────────────────────────────
+
+function APITab({ routes }: { routes: any[] }) {
+  const METHOD_COLORS: Record<string, string> = { GET: 'var(--success)', POST: 'var(--accent)', PUT: 'var(--warning)', DELETE: 'var(--error)', PATCH: '#a855f7', ANY: 'var(--fg-4)' };
+
+  if (!routes.length) {
+    return (
+      <div className="empty-state">
+        <Code2 size={28} style={{ color: 'var(--fg-4)', marginBottom: 12 }}/>
+        <h3>No API routes detected</h3>
+        <p>Supports FastAPI, Flask, Express, Django, Next.js, Spring, Rails, and more.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div style={{ padding: '12px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--fg)' }}>{routes.length} endpoints discovered</span>
+      </div>
+      <table className="data-table" style={{ width: '100%' }}>
+        <thead>
+          <tr>
+            <th style={{ width: 80 }}>Method</th>
+            <th>Path</th>
+            <th style={{ width: 120 }}>Framework</th>
+            <th>File</th>
+          </tr>
+        </thead>
+        <tbody>
+          {routes.map((r, i) => (
+            <tr key={i}>
+              <td><span className="text-mono" style={{ fontSize: 11, fontWeight: 700, color: METHOD_COLORS[r.method] ?? 'var(--fg-3)' }}>{r.method}</span></td>
+              <td className="text-mono" style={{ fontSize: 12, color: 'var(--fg)', fontWeight: 500 }}>{r.path}</td>
+              <td style={{ fontSize: 12, color: 'var(--fg-3)' }}>{r.framework}</td>
+              <td className="text-mono" style={{ fontSize: 11, color: 'var(--fg-4)', maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.file}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ─── Interview tab ────────────────────────────────────────────────────────────
+
+function InterviewTab({ questions }: { questions: InterviewQuestion[] }) {
+  const [filter, setFilter] = useState('all');
+  const [expanded, setExpanded] = useState<number | null>(null);
+  const [copied, setCopied] = useState<number | null>(null);
+
+  const cats = ['all', ...new Set(questions.map(q => q.category))];
+  const filtered = filter === 'all' ? questions : questions.filter(q => q.category === filter);
+
+  const copyQA = async (q: InterviewQuestion, i: number) => {
+    await navigator.clipboard.writeText(`Q: ${q.question}\n\nA: ${q.expected_answer}`);
+    setCopied(i); setTimeout(() => setCopied(null), 2000);
+  };
+
+  const diffColors: Record<string, string> = { medium: 'var(--warning)', hard: '#f97316', expert: 'var(--error)' };
+
+  if (!questions.length) {
+    return (
+      <div className="empty-state">
+        <Eye size={28} style={{ color: 'var(--fg-4)', marginBottom: 12 }}/>
+        <h3>No interview questions generated</h3>
+        <p>Enable Interview Prep when starting an analysis.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div style={{ padding: '12px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6 }}>
+        {cats.map(c => (
+          <button key={c} onClick={() => setFilter(c)}
+            className={`btn btn-sm ${filter === c ? 'btn-secondary' : 'btn-ghost'}`}
+            style={{ textTransform: 'capitalize' }}>{c}
+          </button>
+        ))}
+      </div>
+      {filtered.map((q, i) => (
+        <div key={i} style={{ borderBottom: '1px solid var(--border)', background: expanded === i ? 'var(--bg-1)' : 'var(--bg)' }}>
+          <button onClick={() => setExpanded(expanded === i ? null : i)}
+            style={{ width: '100%', background: 'none', border: 'none', display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px 24px', cursor: 'pointer', textAlign: 'left' }}>
+            <span className="text-mono" style={{ fontSize: 11, color: 'var(--fg-4)', marginTop: 2, minWidth: 20 }}>{String(i + 1).padStart(2, '0')}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
+                <span className="badge badge-neutral" style={{ fontSize: 10, textTransform: 'capitalize' }}>{q.category}</span>
+                <span className="text-mono" style={{ fontSize: 10, color: diffColors[q.difficulty] ?? 'var(--fg-3)', fontWeight: 600 }}>{q.difficulty?.toUpperCase()}</span>
+              </div>
+              <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--fg)', lineHeight: 1.5 }}>{q.question}</p>
+            </div>
+            <motion.div animate={{ rotate: expanded === i ? 180 : 0 }} transition={{ duration: 0.15 }} style={{ color: 'var(--fg-4)', flexShrink: 0 }}>
+              <ChevronDown size={13}/>
+            </motion.div>
+          </button>
+          <AnimatePresence>
+            {expanded === i && (
+              <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} transition={{ duration: 0.18 }} style={{ overflow: 'hidden' }}>
+                <div style={{ padding: '0 24px 20px 56px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--fg-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Answer</span>
+                    <button onClick={() => copyQA(q, i)} className="btn btn-ghost btn-sm">
+                      {copied === i ? <><Check size={11}/> Copied</> : <><Copy size={11}/> Copy Q&A</>}
+                    </button>
+                  </div>
+                  <p style={{ fontSize: 13, color: 'var(--fg-3)', lineHeight: 1.75 }}>{q.expected_answer}</p>
+                  {q.follow_up && (
+                    <div style={{ marginTop: 12, padding: '10px 14px', background: 'var(--bg-2)', border: '1px solid var(--border-2)', borderRadius: 6 }}>
+                      <p style={{ fontSize: 11, color: 'var(--fg-4)', marginBottom: 4 }}>Follow-up</p>
+                      <p style={{ fontSize: 13, color: 'var(--fg-3)', fontStyle: 'italic' }}>"{q.follow_up}"</p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Export tab ───────────────────────────────────────────────────────────────
+
+function ExportTab({ analysisId, report }: { analysisId: string; report: AnalysisReport }) {
+  const { user } = useAuthStore();
+  const [loading, setLoading] = useState<string | null>(null);
+
+  const download = async (fmt: 'pdf' | 'pptx' | 'markdown') => {
+    if (fmt === 'pptx' && user?.plan === 'free') { toast.error('PPTX requires Pro plan'); return; }
+    setLoading(fmt);
+    try { await api.downloadExport(analysisId, fmt); toast.success(`${fmt.toUpperCase()} downloaded`); }
+    catch { toast.error('Export failed'); }
+    finally { setLoading(null); }
+  };
+
+  const formats = [
+    { id: 'pdf' as const, label: 'PDF Report', icon: FileCode, desc: 'Architecture, security findings, interview Q&A, recommendations', free: true },
+    { id: 'pptx' as const, label: 'PPTX Slides', icon: Layers, desc: 'Presentation deck for architecture reviews and technical discussions', free: false, credits: 5 },
+    { id: 'markdown' as const, label: 'Markdown Docs', icon: Code2, desc: 'GitHub wiki-ready documentation with API inventory and security notes', free: true },
+  ];
+
+  return (
+    <div style={{ padding: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 24 }}>
+        {formats.map(f => {
+          const Icon = f.icon;
+          const isPro = !f.free && user?.plan === 'free';
+          return (
+            <div key={f.id} style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 8, padding: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Icon size={15} style={{ color: 'var(--fg-2)' }}/>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{f.label}</span>
+                </div>
+                {f.free ? <span className="badge badge-success" style={{ fontSize: 10 }}>Free</span>
+                         : <span className="badge badge-neutral text-mono" style={{ fontSize: 10 }}>{f.credits}cr</span>}
+              </div>
+              <p style={{ fontSize: 12, color: 'var(--fg-3)', lineHeight: 1.6, marginBottom: 16 }}>{f.desc}</p>
+              <button onClick={() => download(f.id)} disabled={loading === f.id || isPro}
+                className={isPro ? 'btn btn-secondary' : 'btn btn-secondary'}
+                style={{ width: '100%', justifyContent: 'center', opacity: isPro ? 0.5 : 1 }}>
+                {loading === f.id
+                  ? <span className="w-3 h-3 border-2 border-fg/20 border-t-fg rounded-full animate-spin"/>
+                  : isPro ? <><Lock size={11}/> Pro required</>
+                  : <><Download size={11}/> Download {f.id.toUpperCase()}</>}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Report summary */}
+      <div style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 8, padding: '16px 20px' }}>
+        <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--fg-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Report includes</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
+          {[
+            { l: 'Repository', v: report.repo_name ?? '—' },
+            { l: 'Files',      v: String(report.file_count ?? 0) },
+            { l: 'Security',   v: `${report.security_findings?.length ?? 0} findings` },
+            { l: 'API Routes', v: String(report.api_inventory?.length ?? 0) },
+          ].map(s => (
+            <div key={s.l}>
+              <p style={{ fontSize: 11, color: 'var(--fg-4)', marginBottom: 3 }}>{s.l}</p>
+              <p className="text-mono" style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{s.v}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Dashboard root ────────────────────────────────────────────────────────────
+
+export default function DashboardPage() {
+  const { token, user, refreshUser } = useAuthStore();
+  const { activeAnalysisId, activeReport, isAnalyzing, startAnalysis, history, setHistory, setError } = useAnalysisStore();
+  const { activeTab, setActiveTab } = useUIStore();
+
+  useEffect(() => {
+    if (token && !user) refreshUser();
+    if (token) api.getAnalysisHistory().then(d => setHistory(d.analyses)).catch(() => {});
+  }, [token]);
+
+  const handleStart = useCallback(async (url: string) => {
+    try {
+      await startAnalysis(url);
+      setActiveTab('overview');
+      toast.success('Analysis complete');
+      api.getAnalysisHistory().then(d => setHistory(d.analyses)).catch(() => {});
+    } catch (err) {
+      toast.error(ArchDefendAPI.getErrorMessage(err));
+    }
+  }, [startAnalysis, setActiveTab, setHistory]);
+
+  // Graph viewer needs lazy import to avoid SSR issues
+  const [GraphViewer, setGraphViewer] = useState<any>(null);
+  useEffect(() => {
+    import('@/components/graph/GraphViewer').then(m => setGraphViewer(() => m.GraphViewer));
+  }, []);
+
+  return (
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg)' }}>
+      <Sidebar/>
+      <main style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+        {!activeAnalysisId ? (
+          <AnalysisInput onStart={handleStart}/>
+        ) : activeReport ? (
+          <>
+            <ReportHeader report={activeReport} analysisId={activeAnalysisId}/>
+            <AnimatePresence mode="wait">
+              <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.12 }}>
+                {activeTab === 'overview'  && <OverviewTab report={activeReport}/>}
+                {activeTab === 'graph'     && GraphViewer && (
+                  <div style={{ height: 'calc(100vh - 88px)' }}>
+                    <GraphViewer nodes={activeReport.dependency_graph?.nodes ?? []} edges={activeReport.dependency_graph?.edges ?? []}/>
+                  </div>
+                )}
+                {activeTab === 'security'  && <SecurityTab  findings={activeReport.security_findings ?? []}/>}
+                {activeTab === 'api'       && <APITab       routes={activeReport.api_inventory ?? []}/>}
+                {activeTab === 'interview' && <InterviewTab questions={activeReport.interview_questions ?? []}/>}
+                {activeTab === 'export'    && <ExportTab    analysisId={activeAnalysisId} report={activeReport}/>}
+              </motion.div>
+            </AnimatePresence>
+          </>
+        ) : (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ textAlign: 'center' }}>
+              <motion.span animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+                style={{ display: 'inline-block', width: 24, height: 24, border: '2px solid var(--border-3)', borderTopColor: 'var(--fg)', borderRadius: '50%', marginBottom: 16 }}/>
+              <p style={{ fontSize: 13, color: 'var(--fg-3)' }}>Loading report…</p>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}

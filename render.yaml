@@ -1,0 +1,76 @@
+services:
+  # ── FastAPI Backend ─────────────────────────────────────────────────────────
+  - type: web
+    name: archdefend-api
+    runtime: python
+    rootDir: apps/api
+    buildCommand: |
+      apt-get update -qq && \
+      apt-get install -y -qq --no-install-recommends \
+        git \
+        libcairo2 \
+        libpango-1.0-0 \
+        libpangocairo-1.0-0 \
+        libgdk-pixbuf2.0-0 \
+        libffi-dev \
+        shared-mime-info \
+        libxml2-dev \
+        libxslt1-dev && \
+      pip install --upgrade pip && \
+      pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    plan: free
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET
+        generateValue: true
+      - key: TEMP_CLONE_DIR
+        value: /tmp/archdefend/repos
+      - key: MAX_REPO_SIZE_MB
+        value: "200"
+      - key: CLONE_TIMEOUT_SECONDS
+        value: "120"
+      - key: FREE_TIER_CREDITS
+        value: "20"
+      - key: SMALL_REPO_CREDITS
+        value: "5"
+      - key: MEDIUM_REPO_CREDITS
+        value: "15"
+      - key: LARGE_REPO_CREDITS
+        value: "40"
+      - key: PPTX_EXPORT_CREDITS
+        value: "5"
+      - key: SECURITY_SCAN_CREDITS
+        value: "15"
+      - key: NOWPAYMENTS_BASE_URL
+        value: https://api.nowpayments.io/v1
+      # ── These you must fill in manually on Render dashboard ──────────────────
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GITHUB_CLIENT_ID
+        sync: false
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+      - key: GITHUB_CALLBACK_URL
+        sync: false
+      - key: NOWPAYMENTS_API_KEY
+        sync: false
+      - key: NOWPAYMENTS_IPN_SECRET
+        sync: false
+      - key: ALLOWED_HOSTS
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false

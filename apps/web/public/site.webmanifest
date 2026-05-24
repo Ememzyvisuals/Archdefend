@@ -1,0 +1,16 @@
+{
+  "name": "ArchDefend — AI Codebase Intelligence",
+  "short_name": "ArchDefend",
+  "description": "Paste a GitHub URL. Get architecture maps, security audits, and interview docs in 90 seconds.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["developer tools", "productivity"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

@@ -1,0 +1,67 @@
+# ArchDefend — FastAPI Backend Docker Image
+# Multi-stage build for minimal production image
+
+FROM python:3.12-slim AS base
+
+# Security: non-root user
+RUN groupadd -r archdefend && useradd -r -g archdefend archdefend
+
+# System dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    build-essential \
+    libpq-dev \
+    libffi-dev \
+    libssl-dev \
+    libxml2-dev \
+    libxslt1-dev \
+    libcairo2 \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libgdk-pixbuf2.0-0 \
+    libffi-dev \
+    shared-mime-info \
+    && rm -rf /var/lib/apt/lists/*
+
+# Git security: only allow HTTPS, no local execution
+RUN git config --global protocol.file.allow never \
+    && git config --global protocol.allow never \
+    && git config --global protocol.https.allow always
+
+# ── Builder stage ─────────────────────────────────────────────────────────────
+FROM base AS builder
+
+WORKDIR /app
+COPY requirements.txt .
+
+# Install Python deps
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
+
+# ── Production stage ──────────────────────────────────────────────────────────
+FROM base AS production
+
+WORKDIR /app
+
+# Copy installed packages from builder
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Copy application code
+COPY --chown=archdefend:archdefend . .
+
+# Create temp directory for repo cloning
+RUN mkdir -p /tmp/archdefend/repos && chown -R archdefend:archdefend /tmp/archdefend
+
+# Switch to non-root
+USER archdefend
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8000/api/v1/health || exit 1
+
+EXPOSE 8000
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", \
+     "--workers", "2", "--log-level", "info"]
