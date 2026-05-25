@@ -25,8 +25,7 @@ class Settings(BaseSettings):
     DATABASE_MAX_OVERFLOW: int = 20
 
     # ── Redis ─────────────────────────────────────────────────────────────────
-    REDIS_URL: str = "redis://default:AZkMAAIgcDFiYmZhMDhiY2JmNmU0Nzk3OTU4ZGVkNzU4ZDQzYjNlNQ@equipped-octopus-39180.upstash.io:6379"
-
+    REDIS_URL: str = ""
     # ── Supabase ──────────────────────────────────────────────────────────────
     SUPABASE_URL: str = ""
     SUPABASE_SERVICE_KEY: str = ""
