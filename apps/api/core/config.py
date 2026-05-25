@@ -16,15 +16,15 @@ class Settings(BaseSettings):
 
     # ── Server ───────────────────────────────────────────────────────────────
     ALLOWED_HOSTS: List[str] = ["*"]
-    CORS_ORIGINS: List[str] =["https://archdefend.vercel.app","https://archdefend-api.onrender.com"]
+    CORS_ORIGINS: List[str] =["https://archdefend.vercel.app","https://archdefend.onrender.com"]
 
     # ── Database ──────────────────────────────────────────────────────────────
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/archdefend"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres.onjlcnppgqerldnoubkd:[Emma@supabase@2008]@aws-0-eu-west-1.pooler.supabase.com:6543/postgres"
     DATABASE_POOL_SIZE: int = 10
     DATABASE_MAX_OVERFLOW: int = 20
 
     # ── Redis ─────────────────────────────────────────────────────────────────
-    REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_URL: str = "redis://default:AZkMAAIgcDFiYmZhMDhiY2JmNmU0Nzk3OTU4ZGVkNzU4ZDQzYjNlNQ@equipped-octopus-39180.upstash.io:6379"
 
     # ── Supabase ──────────────────────────────────────────────────────────────
     SUPABASE_URL: str = ""
