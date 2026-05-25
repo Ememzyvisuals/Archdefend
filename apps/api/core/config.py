@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: List[str] =["https://archdefend.vercel.app","https://archdefend.onrender.com"]
 
     # ── Database ──────────────────────────────────────────────────────────────
-    DATABASE_URL: str = "postgresql+asyncpg://postgres.onjlcnppgqerldnoubkd:[Emma@supabase@2008]@aws-0-eu-west-1.pooler.supabase.com:6543/postgres"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres.onjlcnppgqerldnoubkd:Emma%40supabase%402008@aws-0-eu-west-1.pooler.supabase.com:6543/postgres"
     DATABASE_POOL_SIZE: int = 10
     DATABASE_MAX_OVERFLOW: int = 20
 
