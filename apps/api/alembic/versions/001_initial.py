@@ -14,16 +14,28 @@ down_revision = None
 branch_labels = None
 depends_on = None
 
+# Define enums once with create_type=False so SQLAlchemy never tries
+# to auto-create them — we create them explicitly via op.execute below.
+plantier = postgresql.ENUM('free', 'pro', 'team', name='plantier', create_type=False)
+analysisstatus = postgresql.ENUM(
+    'pending', 'cloning', 'parsing', 'analyzing',
+    'generating', 'completed', 'failed',
+    name='analysisstatus', create_type=False
+)
+exportformat = postgresql.ENUM('pdf', 'pptx', 'markdown', 'html', name='exportformat', create_type=False)
+
 
 def upgrade() -> None:
-    # Enable extensions
-    op.execute("CREATE EXTENSION IF NOT EXISTS vector")
-    op.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+    conn = op.get_bind()
 
-    # Enums
-    op.execute("CREATE TYPE plantier AS ENUM ('free', 'pro', 'team')")
-    op.execute("CREATE TYPE analysisstatus AS ENUM ('pending', 'cloning', 'parsing', 'analyzing', 'generating', 'completed', 'failed')")
-    op.execute("CREATE TYPE exportformat AS ENUM ('pdf', 'pptx', 'markdown', 'html')")
+    # Enable extensions
+    conn.execute(sa.text("CREATE EXTENSION IF NOT EXISTS vector"))
+    conn.execute(sa.text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"'))
+
+    # Create enum types explicitly (once, no double-creation)
+    conn.execute(sa.text("CREATE TYPE plantier AS ENUM ('free', 'pro', 'team')"))
+    conn.execute(sa.text("CREATE TYPE analysisstatus AS ENUM ('pending', 'cloning', 'parsing', 'analyzing', 'generating', 'completed', 'failed')"))
+    conn.execute(sa.text("CREATE TYPE exportformat AS ENUM ('pdf', 'pptx', 'markdown', 'html')"))
 
     # users
     op.create_table(
@@ -35,7 +47,7 @@ def upgrade() -> None:
         sa.Column('github_username', sa.String(128)),
         sa.Column('github_access_token', sa.Text()),
         sa.Column('avatar_url', sa.String(512)),
-        sa.Column('plan', sa.Enum('free', 'pro', 'team', name='plantier'), nullable=False, server_default='free'),
+        sa.Column('plan', plantier, nullable=False, server_default='free'),
         sa.Column('credits', sa.Integer(), nullable=False, server_default='20'),
         sa.Column('is_active', sa.Boolean(), server_default='true'),
         sa.Column('is_verified', sa.Boolean(), server_default='false'),
@@ -54,7 +66,7 @@ def upgrade() -> None:
         sa.Column('repo_name', sa.String(256)),
         sa.Column('repo_owner', sa.String(128)),
         sa.Column('repo_branch', sa.String(128), server_default='main'),
-        sa.Column('status', sa.Enum('pending','cloning','parsing','analyzing','generating','completed','failed', name='analysisstatus'), server_default='pending'),
+        sa.Column('status', analysisstatus, server_default='pending'),
         sa.Column('credits_used', sa.Integer(), server_default='0'),
         sa.Column('repo_size_mb', sa.Float()),
         sa.Column('file_count', sa.Integer()),
@@ -89,7 +101,7 @@ def upgrade() -> None:
         'subscriptions',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text('uuid_generate_v4()')),
         sa.Column('user_id', postgresql.UUID(as_uuid=True), sa.ForeignKey('users.id', ondelete='CASCADE'), nullable=False),
-        sa.Column('plan', sa.Enum('free', 'pro', 'team', name='plantier'), nullable=False),
+        sa.Column('plan', plantier, nullable=False),
         sa.Column('nowpayments_payment_id', sa.String(256), unique=True),
         sa.Column('nowpayments_order_id', sa.String(256)),
         sa.Column('status', sa.String(64), server_default='pending'),
