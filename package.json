@@ -8,7 +8,7 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
-    "web": "cd apps/web && pnpm dev",
+    "web": "cd apps/web && yarn dev",
     "api": "cd apps/api && uvicorn main:app --reload --port 8000"
   },
   "devDependencies": {
@@ -16,7 +16,6 @@
     "typescript": "^5.4.0"
   },
   "engines": {
-    "node": ">=20.0.0",
-    "pnpm": ">=9.0.0"
+    "node": ">=20.0.0"
   }
 }
