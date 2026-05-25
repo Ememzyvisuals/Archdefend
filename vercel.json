@@ -1,6 +1,7 @@
 {
-  "buildCommand": "cd apps/web && yarn install && yarn build",
-  "outputDirectory": "apps/web/.next",
+  "buildCommand": "yarn build",
+  "installCommand": "yarn install",
+  "outputDirectory": ".next",
   "framework": "nextjs",
   "regions": ["iad1"],
   "headers": [
