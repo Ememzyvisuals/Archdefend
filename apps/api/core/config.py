@@ -1,3 +1,4 @@
+
 """
 ArchDefend — Core Configuration
 Loaded from environment variables via pydantic-settings.
@@ -16,7 +17,7 @@ class Settings(BaseSettings):
 
     # ── Server ───────────────────────────────────────────────────────────────
     ALLOWED_HOSTS: List[str] = ["*"]
-    CORS_ORIGINS: List[str] =["https://archdefend.vercel.app","https://archdefend.onrender.com"]
+    CORS_ORIGINS: List[str] = ["https://archdefend.vercel.app", "https://archdefend.onrender.com"]
 
     # ── Database ──────────────────────────────────────────────────────────────
     DATABASE_URL: str = "postgresql+asyncpg://postgres.onjlcnppgqerldnoubkd:Emma%40supabase%402008@aws-0-eu-west-1.pooler.supabase.com:6543/postgres"
@@ -90,7 +91,6 @@ class Settings(BaseSettings):
     def assemble_async_db_url(cls, v: str) -> str:
         if not v:
             return v
-        # Convert standard sync schemes to explicit async format
         if v.startswith("postgres://"):
             return v.replace("postgres://", "postgresql+asyncpg://", 1)
         if v.startswith("postgresql://") and not v.startswith("postgresql+asyncpg://"):
