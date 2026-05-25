@@ -20,10 +20,10 @@ def upgrade() -> None:
     op.execute("CREATE EXTENSION IF NOT EXISTS vector")
     op.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"")
 
-    # Enums
-    op.execute("CREATE TYPE plantier AS ENUM ('free', 'pro', 'team')")
-    op.execute("CREATE TYPE analysisstatus AS ENUM ('pending', 'cloning', 'parsing', 'analyzing', 'generating', 'completed', 'failed')")
-    op.execute("CREATE TYPE exportformat AS ENUM ('pdf', 'pptx', 'markdown', 'html')")
+    # Enums — IF NOT EXISTS prevents crash on re-deploy
+    op.execute("CREATE TYPE IF NOT EXISTS plantier AS ENUM ('free', 'pro', 'team')")
+    op.execute("CREATE TYPE IF NOT EXISTS analysisstatus AS ENUM ('pending', 'cloning', 'parsing', 'analyzing', 'generating', 'completed', 'failed')")
+    op.execute("CREATE TYPE IF NOT EXISTS exportformat AS ENUM ('pdf', 'pptx', 'markdown', 'html')")
 
     # users
     op.create_table(
