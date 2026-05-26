@@ -192,7 +192,7 @@ export default function HomePage() {
               Everything your security team needs
             </h2>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 1, border: '1px solid var(--border)', borderRadius: var(--radius-lg) }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 1, border: '1px solid var(--border)', borderRadius: 12 }}>
             {FEATURES.map((f, i) => (
               <motion.div key={i} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}
                 style={{ padding: 32, borderRight: (i + 1) % 2 !== 0 ? '1px solid var(--border)' : 'none', borderBottom: i < FEATURES.length - 2 ? '1px solid var(--border)' : 'none' }}>
