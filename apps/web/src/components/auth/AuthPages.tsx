@@ -7,29 +7,42 @@ import { useAuthStore } from '@/store';
 import { api, ArchDefendAPI } from '@/lib/api';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-// ─── Shell ────────────────────────────────────────────────────────────────────
-
 function AuthShell({ children, title, sub }: { children: React.ReactNode; title: string; sub: string }) {
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-      {/* Subtle top border gradient */}
-      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)' }}/>
+    <div style={{
+      minHeight: '100vh', background: 'var(--bg)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '24px 16px', position: 'relative', overflow: 'hidden',
+    }}>
+      {/* Grid bg */}
+      <div style={{
+        position: 'fixed', inset: 0, pointerEvents: 'none',
+        backgroundImage: 'linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px)',
+        backgroundSize: '40px 40px', opacity: 0.3,
+        maskImage: 'radial-gradient(ellipse 70% 70% at 50% 50%, black, transparent)',
+        WebkitMaskImage: 'radial-gradient(ellipse 70% 70% at 50% 50%, black, transparent)',
+      }}/>
 
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}
-        style={{ width: '100%', maxWidth: 400 }}>
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+        style={{ width: '100%', maxWidth: 400, position: 'relative', zIndex: 1 }}>
+
         {/* Logo */}
-        <a href="/" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 32, textDecoration: 'none' }}>
-          <div style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Shield size={15} style={{ color: 'var(--bg)' }} strokeWidth={2.5}/>
+        <a href="/" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 36, textDecoration: 'none' }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Shield size={16} color="#fff" strokeWidth={2.5}/>
           </div>
-          <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--fg)', letterSpacing: '-0.01em' }}>ArchDefend</span>
+          <span style={{ fontFamily: 'Syne, sans-serif', fontSize: 17, fontWeight: 800, color: 'var(--fg)', letterSpacing: '-0.02em' }}>ArchDefend</span>
         </a>
 
         {/* Card */}
-        <div style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 12, padding: '32px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+        <div style={{
+          background: 'var(--bg-1)', border: '1px solid var(--border-2)',
+          borderRadius: 12, padding: '28px 28px',
+          boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
+        }}>
           <div style={{ marginBottom: 24 }}>
-            <h1 style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--fg)', marginBottom: 4 }}>{title}</h1>
-            <p style={{ fontSize: 13, color: 'var(--fg-3)' }}>{sub}</p>
+            <h1 style={{ fontSize: 22, fontFamily: 'Syne, sans-serif', fontWeight: 800, color: 'var(--fg)', marginBottom: 4, letterSpacing: '-0.02em' }}>{title}</h1>
+            <p style={{ fontSize: 13, color: 'var(--fg-3)', lineHeight: 1.5 }}>{sub}</p>
           </div>
           {children}
         </div>
@@ -38,18 +51,18 @@ function AuthShell({ children, title, sub }: { children: React.ReactNode; title:
   );
 }
 
-// ─── Error box ────────────────────────────────────────────────────────────────
-
 function ErrorBox({ message }: { message: string }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px 12px', background: 'rgba(220,0,0,0.06)', border: '1px solid rgba(220,0,0,0.2)', borderRadius: 6, marginBottom: 16 }}>
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px 12px', background: 'rgba(248,113,113,0.06)', border: '1px solid rgba(248,113,113,0.2)', borderRadius: 6, marginBottom: 16 }}>
       <AlertCircle size={13} style={{ color: 'var(--error)', flexShrink: 0, marginTop: 1 }}/>
       <p style={{ fontSize: 12, color: 'var(--error)', lineHeight: 1.5 }}>{message}</p>
     </div>
   );
 }
 
-// ─── Login Page ────────────────────────────────────────────────────────────────
+function Label({ children }: { children: React.ReactNode }) {
+  return <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--fg-2)', marginBottom: 6, letterSpacing: '0.02em' }}>{children}</label>;
+}
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
@@ -73,62 +86,54 @@ export function LoginPage() {
   };
 
   return (
-    <AuthShell title="Welcome back" sub="Sign in to your account to continue">
-      {/* GitHub OAuth */}
+    <AuthShell title="Welcome back" sub="Sign in to continue to ArchDefend">
       <a href={api.getGitHubOAuthUrl()}
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', height: 36, borderRadius: 6, background: 'var(--bg-2)', border: '1px solid var(--border-2)', fontSize: 13, fontWeight: 500, color: 'var(--fg)', textDecoration: 'none', transition: 'all .15s', marginBottom: 20 }}
-        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-3)')}
-        onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg-2)')}>
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', height: 40, borderRadius: 6, background: 'var(--bg-2)', border: '1px solid var(--border-2)', fontSize: 13, fontWeight: 500, color: 'var(--fg)', textDecoration: 'none', transition: 'all .15s', marginBottom: 20 }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-3)'; e.currentTarget.style.borderColor = 'var(--border-3)'; }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-2)'; e.currentTarget.style.borderColor = 'var(--border-2)'; }}>
         <Github size={15}/> Continue with GitHub
       </a>
 
-      {/* Divider */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
         <div style={{ flex: 1, height: 1, background: 'var(--border)' }}/>
-        <span style={{ fontSize: 11, color: 'var(--fg-4)' }}>or</span>
+        <span style={{ fontSize: 11, color: 'var(--fg-4)', fontFamily: 'IBM Plex Mono, monospace' }}>or</span>
         <div style={{ flex: 1, height: 1, background: 'var(--border)' }}/>
       </div>
 
       {error && <ErrorBox message={error}/>}
 
-      <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div>
-          <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: 'var(--fg-2)', marginBottom: 6 }}>Email</label>
+          <Label>Email</Label>
           <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
-            placeholder="you@example.com" className="input" style={{ width: '100%' }}/>
+            placeholder="you@example.com" className="input"/>
         </div>
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-            <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--fg-2)' }}>Password</label>
-            <a href="/auth/forgot" style={{ fontSize: 12, color: 'var(--accent)', textDecoration: 'none' }}>Forgot?</a>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <Label>Password</Label>
+            <a href="#" style={{ fontSize: 11, color: 'var(--fg-3)' }}>Forgot?</a>
           </div>
           <div style={{ position: 'relative' }}>
             <input type={show ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required
-              placeholder="••••••••" className="input" style={{ width: '100%', paddingRight: 36 }}/>
-            <button type="button" onClick={() => setShow(s => !s)}
-              style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-3)', display: 'flex', alignItems: 'center' }}>
-              {show ? <EyeOff size={13}/> : <Eye size={13}/>}
+              placeholder="••••••••" className="input" style={{ paddingRight: 40 }}/>
+            <button type="button" onClick={() => setShow(!show)}
+              style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--fg-3)', padding: 0, cursor: 'pointer' }}>
+              {show ? <EyeOff size={14}/> : <Eye size={14}/>}
             </button>
           </div>
         </div>
-
-        <button type="submit" disabled={loading} className="btn btn-primary"
-          style={{ width: '100%', justifyContent: 'center', height: 36, marginTop: 4, opacity: loading ? 0.6 : 1 }}>
-          {loading
-            ? <span style={{ width: 13, height: 13, border: '2px solid rgba(0,0,0,0.2)', borderTopColor: 'var(--bg)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', display: 'inline-block' }}/>
-            : <><span>Sign in</span><ArrowRight size={12}/></>}
+        <button type="submit" disabled={loading} className="btn btn-primary btn-md" style={{ width: '100%', marginTop: 4 }}>
+          {loading ? <span className="spinner"/> : <>Sign in <ArrowRight size={13}/></>}
         </button>
       </form>
 
-      <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--fg-4)', marginTop: 20 }}>
+      <p style={{ marginTop: 20, textAlign: 'center', fontSize: 12, color: 'var(--fg-3)' }}>
         No account?{' '}
-        <a href="/auth/signup" style={{ color: 'var(--fg-2)', textDecoration: 'none', fontWeight: 500 }}>Create one free</a>
+        <a href="/auth/signup" style={{ color: 'var(--accent)', fontWeight: 500 }}>Create one free</a>
       </p>
     </AuthShell>
   );
 }
-
-// ─── Signup Page ──────────────────────────────────────────────────────────────
 
 export function SignupPage() {
   const [email, setEmail] = useState('');
@@ -141,9 +146,7 @@ export function SignupPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    if (password.length < 8) { setError('Password must be at least 8 characters'); return; }
-    setLoading(true);
+    setError(''); setLoading(true);
     try {
       const { access_token, user } = await api.signup(email, password);
       setToken(access_token); setUser(user);
@@ -154,71 +157,50 @@ export function SignupPage() {
   };
 
   return (
-    <AuthShell title="Create your account" sub="Free forever · 20 credits · No credit card required">
+    <AuthShell title="Create account" sub="Free tier includes 20 analysis credits">
       <a href={api.getGitHubOAuthUrl()}
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', height: 36, borderRadius: 6, background: 'var(--bg-2)', border: '1px solid var(--border-2)', fontSize: 13, fontWeight: 500, color: 'var(--fg)', textDecoration: 'none', transition: 'all .15s', marginBottom: 20 }}
-        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-3)')}
-        onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg-2)')}>
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', height: 40, borderRadius: 6, background: 'var(--bg-2)', border: '1px solid var(--border-2)', fontSize: 13, fontWeight: 500, color: 'var(--fg)', textDecoration: 'none', transition: 'all .15s', marginBottom: 20 }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-3)'; e.currentTarget.style.borderColor = 'var(--border-3)'; }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-2)'; e.currentTarget.style.borderColor = 'var(--border-2)'; }}>
         <Github size={15}/> Continue with GitHub
       </a>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
         <div style={{ flex: 1, height: 1, background: 'var(--border)' }}/>
-        <span style={{ fontSize: 11, color: 'var(--fg-4)' }}>or</span>
+        <span style={{ fontSize: 11, color: 'var(--fg-4)', fontFamily: 'IBM Plex Mono, monospace' }}>or</span>
         <div style={{ flex: 1, height: 1, background: 'var(--border)' }}/>
       </div>
 
       {error && <ErrorBox message={error}/>}
 
-      <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div>
-          <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: 'var(--fg-2)', marginBottom: 6 }}>Email</label>
+          <Label>Email</Label>
           <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
-            placeholder="you@example.com" className="input" style={{ width: '100%' }}/>
+            placeholder="you@example.com" className="input"/>
         </div>
         <div>
-          <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: 'var(--fg-2)', marginBottom: 6 }}>
-            Password <span style={{ color: 'var(--fg-4)', fontWeight: 400 }}>— min. 8 characters</span>
-          </label>
+          <Label>Password</Label>
           <div style={{ position: 'relative' }}>
             <input type={show ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required
-              placeholder="••••••••" className="input" style={{ width: '100%', paddingRight: 36 }}/>
-            <button type="button" onClick={() => setShow(s => !s)}
-              style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-3)', display: 'flex', alignItems: 'center' }}>
-              {show ? <EyeOff size={13}/> : <Eye size={13}/>}
+              placeholder="Min. 8 characters" className="input" minLength={8} style={{ paddingRight: 40 }}/>
+            <button type="button" onClick={() => setShow(!show)}
+              style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--fg-3)', padding: 0, cursor: 'pointer' }}>
+              {show ? <EyeOff size={14}/> : <Eye size={14}/>}
             </button>
           </div>
-          {/* Strength bar */}
-          {password.length > 0 && (
-            <div style={{ marginTop: 6 }}>
-              <div style={{ height: 2, background: 'var(--border)', borderRadius: 1, overflow: 'hidden' }}>
-                <div style={{ height: '100%', borderRadius: 1, transition: 'all .3s', width: `${Math.min(100, (password.length / 16) * 100)}%`, background: password.length < 8 ? 'var(--error)' : password.length < 12 ? 'var(--warning)' : 'var(--success)' }}/>
-              </div>
-              <p style={{ fontSize: 11, color: 'var(--fg-4)', marginTop: 4 }}>
-                {password.length < 8 ? 'Too short' : password.length < 12 ? 'Good' : 'Strong'}
-              </p>
-            </div>
-          )}
         </div>
-
-        <button type="submit" disabled={loading} className="btn btn-primary"
-          style={{ width: '100%', justifyContent: 'center', height: 36, marginTop: 4, opacity: loading ? 0.6 : 1 }}>
-          {loading
-            ? <span style={{ width: 13, height: 13, border: '2px solid rgba(0,0,0,0.2)', borderTopColor: 'var(--bg)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', display: 'inline-block' }}/>
-            : <><span>Create account</span><ArrowRight size={12}/></>}
+        <button type="submit" disabled={loading} className="btn btn-primary btn-md" style={{ width: '100%', marginTop: 4 }}>
+          {loading ? <span className="spinner"/> : <>Create account <ArrowRight size={13}/></>}
         </button>
-
-        <p style={{ fontSize: 11, color: 'var(--fg-4)', textAlign: 'center', lineHeight: 1.5 }}>
-          By signing up you agree to our{' '}
-          <a href="/terms" style={{ color: 'var(--fg-3)', textDecoration: 'none' }}>Terms</a>
-          {' '}and{' '}
-          <a href="/privacy" style={{ color: 'var(--fg-3)', textDecoration: 'none' }}>Privacy Policy</a>
-        </p>
       </form>
 
-      <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--fg-4)', marginTop: 20 }}>
+      <p style={{ marginTop: 20, textAlign: 'center', fontSize: 12, color: 'var(--fg-3)' }}>
         Already have an account?{' '}
-        <a href="/auth/login" style={{ color: 'var(--fg-2)', textDecoration: 'none', fontWeight: 500 }}>Sign in</a>
+        <a href="/auth/login" style={{ color: 'var(--accent)', fontWeight: 500 }}>Sign in</a>
+      </p>
+      <p style={{ marginTop: 12, textAlign: 'center', fontSize: 11, color: 'var(--fg-4)', lineHeight: 1.5 }}>
+        By signing up you agree to our Terms of Service and Privacy Policy.
       </p>
     </AuthShell>
   );
