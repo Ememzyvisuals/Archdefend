@@ -2,47 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── Geist font (Vercel's own font) ───────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap');
 
 @layer base {
   :root {
-    /* Vercel dark palette — exact values */
-    --bg:           #000000;
-    --bg-1:         #0a0a0a;
-    --bg-2:         #111111;
-    --bg-3:         #1a1a1a;
+    --bg:        #080808;
+    --bg-1:      #0e0e0e;
+    --bg-2:      #141414;
+    --bg-3:      #1c1c1c;
 
-    --border:       #222222;
-    --border-2:     #2a2a2a;
-    --border-3:     #333333;
+    --border:    #1f1f1f;
+    --border-2:  #282828;
+    --border-3:  #333;
 
-    --fg:           #ededed;
-    --fg-2:         #a1a1a1;
-    --fg-3:         #666666;
-    --fg-4:         #444444;
+    --fg:        #f0ece4;
+    --fg-2:      #9a9080;
+    --fg-3:      #5a5248;
+    --fg-4:      #3a3530;
 
-    --accent:       #0070f3;     /* Vercel blue */
-    --accent-h:     #0060df;
-    --success:      #00b341;
-    --warning:      #f5a623;
-    --error:        #e00;
-    --cyan:         #0070f3;     /* ArchDefend brand accent */
+    --accent:    #e8673a;
+    --accent-h:  #d4582d;
+    --accent-dim: rgba(232,103,58,0.12);
+    --success:   #4ade80;
+    --warning:   #fbbf24;
+    --error:     #f87171;
 
-    /* GitHub surface additions */
-    --canvas-default:   #0d1117;
-    --canvas-subtle:    #161b22;
-    --canvas-inset:     #010409;
-    --border-default:   #30363d;
-    --border-muted:     #21262d;
-    --fg-default:       #e6edf3;
-    --fg-muted:         #8b949e;
-    --fg-subtle:        #6e7681;
-
-    --radius-sm:    4px;
-    --radius:       6px;
-    --radius-md:    8px;
-    --radius-lg:    12px;
+    --radius-sm: 3px;
+    --radius:    6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
   }
 
   *, *::before, *::after {
@@ -53,335 +41,126 @@
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    font-feature-settings: 'cv01','cv02','cv03','cv04','cv05';
     scroll-behavior: smooth;
   }
 
   body {
     background: var(--bg);
     color: var(--fg);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Instrument Sans', system-ui, sans-serif;
     font-size: 14px;
-    line-height: 1.5;
+    line-height: 1.6;
     overflow-x: hidden;
   }
 
-  ::selection {
-    background: rgba(0, 112, 243, 0.25);
-    color: var(--fg);
-  }
+  ::selection { background: rgba(232,103,58,0.25); color: var(--fg); }
 
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border-3); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--fg-4); }
 
   h1, h2, h3, h4, h5, h6 {
-    font-weight: 600;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
     letter-spacing: -0.02em;
     color: var(--fg);
+    line-height: 1.1;
   }
 
   a { color: inherit; text-decoration: none; }
   button { cursor: pointer; font-family: inherit; }
   input, textarea, select { font-family: inherit; }
-  code, pre, .mono { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+  code, pre, .mono { font-family: 'IBM Plex Mono', monospace; }
 }
 
-/* ─── Vercel component system ─────────────────────────────────────────────── */
 @layer components {
-
-  /* Container */
   .container-app {
-    max-width: 1200px;
+    max-width: 1160px;
     margin: 0 auto;
-    padding: 0 24px;
+    padding: 0 20px;
   }
 
-  /* ── Buttons — Vercel precision ── */
+  /* Buttons */
   .btn {
-    @apply inline-flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium
-           transition-all duration-100 select-none whitespace-nowrap;
-    font-size: 13px;
-    line-height: 1;
-    height: 32px;
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 6px; font-weight: 500; border-radius: var(--radius);
+    transition: all .15s; border: 1px solid transparent;
+    white-space: nowrap; cursor: pointer; font-family: inherit;
+    font-size: 13px; letter-spacing: 0.01em;
   }
+  .btn-sm { height: 32px; padding: 0 14px; font-size: 12px; }
+  .btn-md { height: 38px; padding: 0 18px; }
+  .btn-lg { height: 44px; padding: 0 24px; font-size: 15px; }
 
   .btn-primary {
-    @apply btn;
-    background: var(--fg);
-    color: var(--bg);
-    border: 1px solid var(--fg);
+    background: var(--accent); color: #fff; border-color: var(--accent);
   }
-  .btn-primary:hover { background: var(--fg-2); border-color: var(--fg-2); }
-  .btn-primary:active { transform: scale(0.98); }
-
-  .btn-secondary {
-    @apply btn;
-    background: transparent;
-    color: var(--fg);
-    border: 1px solid var(--border-3);
-  }
-  .btn-secondary:hover { background: var(--bg-2); border-color: var(--border-2); }
+  .btn-primary:hover { background: var(--accent-h); border-color: var(--accent-h); }
 
   .btn-ghost {
-    @apply btn;
-    background: transparent;
-    color: var(--fg-2);
-    border: 1px solid transparent;
+    background: transparent; color: var(--fg-2); border-color: transparent;
   }
-  .btn-ghost:hover { background: var(--bg-2); color: var(--fg); border-color: var(--border); }
+  .btn-ghost:hover { color: var(--fg); background: var(--bg-2); }
 
-  .btn-danger {
-    @apply btn;
-    background: transparent;
-    color: var(--error);
-    border: 1px solid rgba(220, 0, 0, 0.3);
+  .btn-outline {
+    background: transparent; color: var(--fg); border-color: var(--border-2);
   }
-  .btn-danger:hover { background: rgba(220, 0, 0, 0.08); }
+  .btn-outline:hover { border-color: var(--border-3); background: var(--bg-2); }
 
-  .btn-sm { height: 28px; padding: 0 10px; font-size: 12px; }
-  .btn-lg { height: 40px; padding: 0 20px; font-size: 14px; border-radius: var(--radius-md); }
-
-  /* ── Input — GitHub precision ── */
+  /* Inputs */
   .input {
-    @apply w-full px-3 py-1.5 rounded text-sm outline-none transition-all duration-100;
-    background: var(--bg-1);
-    color: var(--fg);
-    border: 1px solid var(--border-3);
-    height: 32px;
-    font-size: 13px;
+    width: 100%; height: 38px; padding: 0 12px;
+    background: var(--bg-2); border: 1px solid var(--border-2);
+    border-radius: var(--radius); color: var(--fg); font-size: 13px;
+    transition: border-color .15s, box-shadow .15s; outline: none;
   }
   .input::placeholder { color: var(--fg-3); }
-  .input:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(0, 112, 243, 0.15);
-  }
-  .input-lg { height: 40px; font-size: 14px; }
+  .input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
 
-  /* ── Cards — Vercel surfaces ── */
-  .card {
-    background: var(--bg-1);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-  }
-
-  .card-2 {
-    background: var(--bg-2);
-    border: 1px solid var(--border-2);
-    border-radius: var(--radius-md);
-  }
-
-  /* ── Badge — GitHub status chips ── */
+  /* Badge */
   .badge {
-    @apply inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium;
-    font-size: 11px;
-    line-height: 1;
-    height: 20px;
+    display: inline-flex; align-items: center; padding: 2px 7px;
+    border-radius: 100px; font-size: 10px; font-weight: 600;
+    letter-spacing: 0.05em; text-transform: uppercase;
+    font-family: 'IBM Plex Mono', monospace;
   }
-  .badge-neutral { background: var(--bg-3); color: var(--fg-2); border: 1px solid var(--border-3); }
-  .badge-success { background: rgba(0, 179, 65, 0.1); color: var(--success); border: 1px solid rgba(0, 179, 65, 0.25); }
-  .badge-warning { background: rgba(245, 166, 35, 0.1); color: var(--warning); border: 1px solid rgba(245, 166, 35, 0.25); }
-  .badge-error   { background: rgba(220, 0, 0, 0.1); color: var(--error); border: 1px solid rgba(220, 0, 0, 0.25); }
-  .badge-accent  { background: rgba(0, 112, 243, 0.1); color: var(--accent); border: 1px solid rgba(0, 112, 243, 0.25); }
-  .badge-cyan    { background: rgba(34, 211, 238, 0.08); color: var(--cyan); border: 1px solid rgba(34, 211, 238, 0.2); }
+  .badge-neutral { background: var(--bg-3); color: var(--fg-2); border: 1px solid var(--border-2); }
+  .badge-accent { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(232,103,58,0.25); }
+  .badge-success { background: rgba(74,222,128,0.1); color: var(--success); border: 1px solid rgba(74,222,128,0.2); }
+  .badge-warning { background: rgba(251,191,36,0.1); color: var(--warning); border: 1px solid rgba(251,191,36,0.2); }
+  .badge-error { background: rgba(248,113,113,0.1); color: var(--error); border: 1px solid rgba(248,113,113,0.2); }
 
-  /* ── Status dot ── */
-  .status-dot {
-    @apply inline-block w-1.5 h-1.5 rounded-full flex-shrink-0;
+  /* Card */
+  .card {
+    background: var(--bg-1); border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
   }
-  .status-dot-success { background: var(--success); }
-  .status-dot-warning { background: var(--warning); }
-  .status-dot-error   { background: var(--error); }
-  .status-dot-idle    { background: var(--fg-4); }
-  .status-dot-live    {
-    background: var(--success);
-    box-shadow: 0 0 0 2px rgba(0, 179, 65, 0.2);
-    animation: pulse-dot 2s ease-in-out infinite;
-  }
+  .card-p { padding: 24px; }
 
-  /* ── Tab nav — Vercel/GitHub style ── */
-  .tab-nav {
-    @apply flex items-center border-b;
-    border-color: var(--border);
-    gap: 0;
-  }
-  .tab-item {
-    @apply px-4 py-2 text-sm font-medium transition-colors duration-100 relative;
-    color: var(--fg-3);
-    font-size: 13px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
-  }
-  .tab-item:hover { color: var(--fg); }
-  .tab-item.active {
-    color: var(--fg);
-    border-bottom-color: var(--fg);
-  }
-  .tab-item.active-accent { border-bottom-color: var(--accent); color: var(--fg); }
-
-  /* ── Sidebar — GitHub precision ── */
-  .sidebar {
-    width: 240px;
-    flex-shrink: 0;
-    background: var(--bg);
-    border-right: 1px solid var(--border);
-    height: 100vh;
-    position: sticky;
-    top: 0;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
+  /* Noise texture overlay */
+  .noise::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    border-radius: inherit; opacity: 0.4;
   }
 
-  .sidebar-item {
-    @apply flex items-center gap-2.5 px-3 py-1.5 rounded text-sm transition-colors duration-100;
-    color: var(--fg-2);
-    font-size: 13px;
-    height: 32px;
-    margin: 1px 8px;
-  }
-  .sidebar-item:hover { background: var(--bg-2); color: var(--fg); }
-  .sidebar-item.active { background: var(--bg-3); color: var(--fg); }
-  .sidebar-item svg { width: 14px; height: 14px; flex-shrink: 0; }
-
-  .sidebar-section {
-    padding: 8px 0 4px;
-    margin: 0 8px;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--fg-4);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-
-  /* ── Table — GitHub data tables ── */
-  .data-table { @apply w-full border-collapse; }
-  .data-table th {
-    @apply px-4 py-2 text-left font-medium;
-    font-size: 12px;
-    color: var(--fg-2);
-    border-bottom: 1px solid var(--border);
-    background: var(--bg-1);
-    white-space: nowrap;
-  }
-  .data-table td {
-    @apply px-4 py-2.5;
-    font-size: 13px;
-    color: var(--fg-2);
-    border-bottom: 1px solid var(--border);
-  }
-  .data-table tr:hover td { background: var(--bg-1); }
-  .data-table tr:last-child td { border-bottom: none; }
-
-  /* ── Code block ── */
-  .code-block {
-    @apply rounded-md overflow-hidden;
-    background: var(--bg-1);
-    border: 1px solid var(--border);
-  }
-  .code-block-header {
-    @apply flex items-center justify-between px-4 py-2;
-    background: var(--bg-2);
-    border-bottom: 1px solid var(--border);
-    font-size: 12px;
-    color: var(--fg-2);
-    font-family: 'JetBrains Mono', monospace;
-  }
-  .code-block pre {
-    @apply p-4 overflow-x-auto;
-    font-size: 12px;
-    font-family: 'JetBrains Mono', monospace;
-    line-height: 1.6;
-    color: var(--fg-2);
-  }
-
-  /* ── Divider ── */
+  /* Divider */
   .divider { height: 1px; background: var(--border); }
 
-  /* ── Empty state ── */
-  .empty-state {
-    @apply flex flex-col items-center justify-center text-center;
-    padding: 64px 32px;
-    color: var(--fg-3);
+  /* Spinner */
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid var(--border-2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
   }
-  .empty-state h3 { font-size: 15px; font-weight: 600; color: var(--fg-2); margin-bottom: 6px; }
-  .empty-state p  { font-size: 13px; max-width: 320px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* ── Avatar ── */
-  .avatar {
-    @apply flex-shrink-0 rounded-full overflow-hidden bg-bg-2;
-    border: 1px solid var(--border-3);
-  }
-  .avatar-sm { width: 24px; height: 24px; }
-  .avatar-md { width: 32px; height: 32px; }
-  .avatar-lg { width: 40px; height: 40px; }
-
-  /* ── Tooltip-style label ── */
-  .kbd {
-    @apply inline-flex items-center px-1.5 rounded;
-    background: var(--bg-2);
-    border: 1px solid var(--border-3);
-    font-size: 11px;
-    font-family: 'JetBrains Mono', monospace;
-    color: var(--fg-2);
-    height: 20px;
+  /* Tag */
+  .tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px; color: var(--fg-3);
+    letter-spacing: 0.08em; text-transform: uppercase;
   }
 }
-
-/* ─── Animations — minimal ────────────────────────────────────────────────── */
-@layer utilities {
-  @keyframes pulse-dot {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0.5; }
-  }
-
-  @keyframes fade-in {
-    from { opacity: 0; transform: translateY(8px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
-  @keyframes shimmer {
-    from { background-position: -200% 0; }
-    to   { background-position:  200% 0; }
-  }
-
-  .animate-fade-in { animation: fade-in 0.25s ease both; }
-  .animate-spin    { animation: spin 0.8s linear infinite; }
-
-  /* Skeleton loader — GitHub style */
-  .skeleton {
-    background: linear-gradient(90deg, var(--bg-2) 25%, var(--bg-3) 50%, var(--bg-2) 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-    border-radius: var(--radius-sm);
-  }
-
-  /* Focus ring — accessibility */
-  .focus-ring:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
-
-  /* Mono text */
-  .text-mono { font-family: 'JetBrains Mono', monospace; }
-
-  /* Truncate multi-line */
-  .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-}
-
-/* ─── Overrides for React Flow ────────────────────────────────────────────── */
-.react-flow__background { background: var(--bg) !important; }
-.react-flow__controls { background: var(--bg-1) !important; border: 1px solid var(--border) !important; border-radius: var(--radius) !important; box-shadow: none !important; }
-.react-flow__controls-button { background: transparent !important; border: none !important; color: var(--fg-2) !important; }
-.react-flow__controls-button:hover { background: var(--bg-2) !important; color: var(--fg) !important; }
-.react-flow__minimap { background: var(--bg-1) !important; border: 1px solid var(--border) !important; border-radius: var(--radius) !important; }
-.react-flow__edge-path { stroke: var(--border-3) !important; stroke-width: 1.5 !important; }
-.react-flow__edge.selected .react-flow__edge-path { stroke: var(--accent) !important; }
