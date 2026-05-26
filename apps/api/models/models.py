@@ -48,7 +48,7 @@ class User(Base):
     github_username = Column(String(128), nullable=True)
     github_access_token = Column(Text, nullable=True)  # encrypted
     avatar_url = Column(String(512), nullable=True)
-    plan = Column(Enum(PlanTier), default=PlanTier.FREE, nullable=False)
+    plan = Column(Enum(PlanTier, values_callable=lambda x: [e.value for e in x]), default=PlanTier.FREE, nullable=False)
     credits = Column(Integer, default=20, nullable=False)
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
@@ -69,7 +69,7 @@ class Analysis(Base):
     repo_name = Column(String(256), nullable=True)
     repo_owner = Column(String(128), nullable=True)
     repo_branch = Column(String(128), default="main")
-    status = Column(Enum(AnalysisStatus), default=AnalysisStatus.PENDING)
+    status = Column(Enum(AnalysisStatus, values_callable=lambda x: [e.value for e in x]), default=AnalysisStatus.PENDING)
     credits_used = Column(Integer, default=0)
     repo_size_mb = Column(Float, nullable=True)
     file_count = Column(Integer, nullable=True)
@@ -109,7 +109,7 @@ class Export(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     analysis_id = Column(UUID(as_uuid=True), ForeignKey("analyses.id"), nullable=False)
-    format = Column(Enum(ExportFormat), nullable=False)
+    format = Column(Enum(ExportFormat, values_callable=lambda x: [e.value for e in x]), nullable=False)
     storage_path = Column(String(1024), nullable=True)
     download_url = Column(String(2048), nullable=True)
     file_size_bytes = Column(BigInteger, nullable=True)
@@ -125,7 +125,7 @@ class Subscription(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
-    plan = Column(Enum(PlanTier), nullable=False)
+    plan = Column(Enum(PlanTier, values_callable=lambda x: [e.value for e in x]), nullable=False)
     nowpayments_payment_id = Column(String(256), unique=True, nullable=True)
     nowpayments_order_id = Column(String(256), nullable=True)
     status = Column(String(64), default="pending")  # pending, active, cancelled, expired
@@ -150,3 +150,4 @@ class CreditTransaction(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="credit_transactions")
+
