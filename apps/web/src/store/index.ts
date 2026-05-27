@@ -51,7 +51,7 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'archdefend-auth',
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ token: state.token }),
+      partialize: (state) => ({ token: state.token, user: state.user }),
     },
   ),
 );
