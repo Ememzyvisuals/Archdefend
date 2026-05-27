@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Shield, Github, ArrowRight, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '@/store';
 import { api, ArchDefendAPI } from '@/lib/api';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 // ─── Shell ────────────────────────────────────────────────────────────────────
 
