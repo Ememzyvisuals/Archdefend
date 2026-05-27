@@ -343,4 +343,748 @@ function SecurityTab({ findings }: { findings: SecurityFinding[] }) {
                         {f.snippet && (
                           <div className="code-block">
                             <div className="code-block-header">{f.file}{f.line ? `:${f.line}` : ''}</div>
-                      
+                            <pre style={{ padding: '10px 14px', fontSize: 12, color: '#ef4444', background: 'var(--bg-1)', margin: 0, overflow: 'auto' }}>{f.snippet}</pre>
+                          </div>
+                        )}
+                        {f.remediation && (
+                          <div style={{ padding: '10px 14px', background: 'rgba(0,179,65,0.06)', border: '1px solid rgba(0,179,65,0.15)', borderRadius: 6 }}>
+                            <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--success)', marginBottom: 4 }}>REMEDIATION</p>
+                            <p style={{ fontSize: 13, color: 'var(--fg-3)', lineHeight: 1.65 }}>{f.remediation}</p>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── API Inventory tab ────────────────────────────────────────────────────────
+
+function APITab({ routes }: { routes: any[] }) {
+  const METHOD_COLORS: Record<string, string> = { GET: 'var(--success)', POST: 'var(--accent)', PUT: 'var(--warning)', DELETE: 'var(--error)', PATCH: '#a855f7', ANY: 'var(--fg-4)' };
+
+  if (!routes.length) {
+    return (
+      <div className="empty-state">
+        <Code2 size={28} style={{ color: 'var(--fg-4)', marginBottom: 12 }}/>
+        <h3>No API routes detected</h3>
+        <p>Supports FastAPI, Flask, Express, Django, Next.js, Spring, Rails, and more.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div style={{ padding: '12px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--fg)' }}>{routes.length} endpoints discovered</span>
+      </div>
+      <table className="data-table" style={{ width: '100%' }}>
+        <thead>
+          <tr>
+            <th style={{ width: 80 }}>Method</th>
+            <th>Path</th>
+            <th style={{ width: 120 }}>Framework</th>
+            <th>File</th>
+          </tr>
+        </thead>
+        <tbody>
+          {routes.map((r, i) => (
+            <tr key={i}>
+              <td><span className="text-mono" style={{ fontSize: 11, fontWeight: 700, color: METHOD_COLORS[r.method] ?? 'var(--fg-3)' }}>{r.method}</span></td>
+              <td className="text-mono" style={{ fontSize: 12, color: 'var(--fg)', fontWeight: 500 }}>{r.path}</td>
+              <td style={{ fontSize: 12, color: 'var(--fg-3)' }}>{r.framework}</td>
+              <td className="text-mono" style={{ fontSize: 11, color: 'var(--fg-4)', maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.file}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ─── Interview tab ────────────────────────────────────────────────────────────
+
+function InterviewTab({ questions }: { questions: InterviewQuestion[] }) {
+  const [filter, setFilter] = useState('all');
+  const [expanded, setExpanded] = useState<number | null>(null);
+  const [copied, setCopied] = useState<number | null>(null);
+
+  const cats = ['all', ...new Set(questions.map(q => q.category))];
+  const filtered = filter === 'all' ? questions : questions.filter(q => q.category === filter);
+
+  const copyQA = async (q: InterviewQuestion, i: number) => {
+    await navigator.clipboard.writeText(`Q: ${q.question}\n\nA: ${q.expected_answer}`);
+    setCopied(i); setTimeout(() => setCopied(null), 2000);
+  };
+
+  const diffColors: Record<string, string> = { medium: 'var(--warning)', hard: '#f97316', expert: 'var(--error)' };
+
+  if (!questions.length) {
+    return (
+      <div className="empty-state">
+        <Eye size={28} style={{ color: 'var(--fg-4)', marginBottom: 12 }}/>
+        <h3>No interview questions generated</h3>
+        <p>Enable Interview Prep when starting an analysis.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div style={{ padding: '12px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6 }}>
+        {cats.map(c => (
+          <button key={c} onClick={() => setFilter(c)}
+            className={`btn btn-sm ${filter === c ? 'btn-secondary' : 'btn-ghost'}`}
+            style={{ textTransform: 'capitalize' }}>{c}
+          </button>
+        ))}
+      </div>
+      {filtered.map((q, i) => (
+        <div key={i} style={{ borderBottom: '1px solid var(--border)', background: expanded === i ? 'var(--bg-1)' : 'var(--bg)' }}>
+          <button onClick={() => setExpanded(expanded === i ? null : i)}
+            style={{ width: '100%', background: 'none', border: 'none', display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px 24px', cursor: 'pointer', textAlign: 'left' }}>
+            <span className="text-mono" style={{ fontSize: 11, color: 'var(--fg-4)', marginTop: 2, minWidth: 20 }}>{String(i + 1).padStart(2, '0')}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
+                <span className="badge badge-neutral" style={{ fontSize: 10, textTransform: 'capitalize' }}>{q.category}</span>
+                <span className="text-mono" style={{ fontSize: 10, color: diffColors[q.difficulty] ?? 'var(--fg-3)', fontWeight: 600 }}>{q.difficulty?.toUpperCase()}</span>
+              </div>
+              <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--fg)', lineHeight: 1.5 }}>{q.question}</p>
+            </div>
+            <motion.div animate={{ rotate: expanded === i ? 180 : 0 }} transition={{ duration: 0.15 }} style={{ color: 'var(--fg-4)', flexShrink: 0 }}>
+              <ChevronDown size={13}/>
+            </motion.div>
+          </button>
+          <AnimatePresence>
+            {expanded === i && (
+              <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} transition={{ duration: 0.18 }} style={{ overflow: 'hidden' }}>
+                <div style={{ padding: '0 24px 20px 56px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--fg-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Answer</span>
+                    <button onClick={() => copyQA(q, i)} className="btn btn-ghost btn-sm">
+                      {copied === i ? <><Check size={11}/> Copied</> : <><Copy size={11}/> Copy Q&A</>}
+                    </button>
+                  </div>
+                  <p style={{ fontSize: 13, color: 'var(--fg-3)', lineHeight: 1.75 }}>{q.expected_answer}</p>
+                  {q.follow_up && (
+                    <div style={{ marginTop: 12, padding: '10px 14px', background: 'var(--bg-2)', border: '1px solid var(--border-2)', borderRadius: 6 }}>
+                      <p style={{ fontSize: 11, color: 'var(--fg-4)', marginBottom: 4 }}>Follow-up</p>
+                      <p style={{ fontSize: 13, color: 'var(--fg-3)', fontStyle: 'italic' }}>"{q.follow_up}"</p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Export tab ───────────────────────────────────────────────────────────────
+
+function ExportTab({ analysisId, report }: { analysisId: string; report: AnalysisReport }) {
+  const { user } = useAuthStore();
+  const [loading, setLoading] = useState<string | null>(null);
+
+  const download = async (fmt: 'pdf' | 'pptx' | 'markdown') => {
+    if (fmt === 'pptx' && user?.plan === 'free') { toast.error('PPTX requires Pro plan'); return; }
+    setLoading(fmt);
+    try { await api.downloadExport(analysisId, fmt); toast.success(`${fmt.toUpperCase()} downloaded`); }
+    catch { toast.error('Export failed'); }
+    finally { setLoading(null); }
+  };
+
+  const formats = [
+    { id: 'pdf' as const, label: 'PDF Report', icon: FileCode, desc: 'Architecture, security findings, interview Q&A, recommendations', free: true },
+    { id: 'pptx' as const, label: 'PPTX Slides', icon: Layers, desc: 'Presentation deck for architecture reviews and technical discussions', free: false, credits: 5 },
+    { id: 'markdown' as const, label: 'Markdown Docs', icon: Code2, desc: 'GitHub wiki-ready documentation with API inventory and security notes', free: true },
+  ];
+
+  return (
+    <div style={{ padding: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 24 }}>
+        {formats.map(f => {
+          const Icon = f.icon;
+          const isPro = !f.free && user?.plan === 'free';
+          return (
+            <div key={f.id} style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 8, padding: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Icon size={15} style={{ color: 'var(--fg-2)' }}/>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{f.label}</span>
+                </div>
+                {f.free ? <span className="badge badge-success" style={{ fontSize: 10 }}>Free</span>
+                         : <span className="badge badge-neutral text-mono" style={{ fontSize: 10 }}>{f.credits}cr</span>}
+              </div>
+              <p style={{ fontSize: 12, color: 'var(--fg-3)', lineHeight: 1.6, marginBottom: 16 }}>{f.desc}</p>
+              <button onClick={() => download(f.id)} disabled={loading === f.id || isPro}
+                className={isPro ? 'btn btn-secondary' : 'btn btn-secondary'}
+                style={{ width: '100%', justifyContent: 'center', opacity: isPro ? 0.5 : 1 }}>
+                {loading === f.id
+                  ? <span className="w-3 h-3 border-2 border-fg/20 border-t-fg rounded-full animate-spin"/>
+                  : isPro ? <><Lock size={11}/> Pro required</>
+                  : <><Download size={11}/> Download {f.id.toUpperCase()}</>}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Report summary */}
+      <div style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 8, padding: '16px 20px' }}>
+        <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--fg-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Report includes</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
+          {[
+            { l: 'Repository', v: report.repo_name ?? '—' },
+            { l: 'Files',      v: String(report.file_count ?? 0) },
+            { l: 'Security',   v: `${report.security_findings?.length ?? 0} findings` },
+            { l: 'API Routes', v: String(report.api_inventory?.length ?? 0) },
+          ].map(s => (
+            <div key={s.l}>
+              <p style={{ fontSize: 11, color: 'var(--fg-4)', marginBottom: 3 }}>{s.l}</p>
+              <p className="text-mono" style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{s.v}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
+
+const NAV_MAIN = [
+  { id: 'overview',  label: 'Overview',      icon: BarChart3 },
+  { id: 'analyses',  label: 'Analyses',      icon: GitBranch },
+  { id: 'settings',  label: 'Account settings', icon: Settings },
+];
+
+const NAV_REPORT = [
+  { id: 'rep-overview',  label: 'Overview',       icon: BarChart3 },
+  { id: 'rep-graph',     label: 'Dependency Graph',icon: Network  },
+  { id: 'rep-security',  label: 'Security',        icon: Lock     },
+  { id: 'rep-api',       label: 'API Inventory',   icon: Code2    },
+  { id: 'rep-interview', label: 'Interview Prep',  icon: Eye      },
+  { id: 'rep-export',    label: 'Export',          icon: Download },
+];
+
+function Sidebar({ page, setPage }: { page: string; setPage: (p: string) => void }) {
+  const { user, logout } = useAuthStore();
+  const { activeAnalysisId, clearActive } = useAnalysisStore();
+  const { activeTab, setActiveTab } = useUIStore();
+
+  return (
+    <aside style={{
+      width: 220, flexShrink: 0, background: 'var(--bg-2)',
+      borderRight: '1px solid var(--border)', display: 'flex',
+      flexDirection: 'column', height: '100vh', overflow: 'hidden',
+    }}>
+      {/* Logo */}
+      <div style={{ padding: '16px 20px 12px', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <div style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Shield size={14} style={{ color: 'var(--bg)' }} strokeWidth={2.5}/>
+          </div>
+          <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)', letterSpacing: '-0.01em' }}>ArchDefend</span>
+        </div>
+        <p style={{ fontSize: 11, color: 'var(--fg-4)', lineHeight: 1.4 }}>AI codebase intelligence</p>
+      </div>
+
+      {/* Nav */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '10px 0' }}>
+        <div style={{ padding: '4px 12px 6px' }}>
+          <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--fg-4)', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
+            Client portal
+          </span>
+        </div>
+        {NAV_MAIN.map(item => {
+          const Icon = item.icon;
+          const active = page === item.id;
+          return (
+            <button key={item.id} onClick={() => { setPage(item.id); clearActive(); }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+                padding: '8px 16px', background: active ? 'var(--accent)' : 'transparent',
+                border: 'none', cursor: 'pointer', textAlign: 'left', borderRadius: 0,
+                color: active ? '#fff' : 'var(--fg-2)', fontSize: 13, fontWeight: active ? 500 : 400,
+                transition: 'all .15s',
+              }}
+              onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'var(--bg-3)'; e.currentTarget.style.color = active ? '#fff' : 'var(--fg)'; }}
+              onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = active ? '#fff' : 'var(--fg-2)'; }}>
+              <Icon size={15}/>{item.label}
+            </button>
+          );
+        })}
+
+        {/* Report nav — only when a report is active */}
+        {activeAnalysisId && (
+          <>
+            <div style={{ padding: '12px 12px 6px', marginTop: 8, borderTop: '1px solid var(--border)' }}>
+              <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--fg-4)', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>
+                Current report
+              </span>
+            </div>
+            {NAV_REPORT.map(item => {
+              const Icon = item.icon;
+              const tabKey = item.id.replace('rep-', '');
+              const active = activeTab === tabKey && page === 'report';
+              return (
+                <button key={item.id}
+                  onClick={() => { setPage('report'); setActiveTab(tabKey); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+                    padding: '7px 16px', background: active ? 'var(--accent)' : 'transparent',
+                    border: 'none', cursor: 'pointer', textAlign: 'left',
+                    color: active ? '#fff' : 'var(--fg-3)', fontSize: 13,
+                    transition: 'all .15s',
+                  }}
+                  onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--bg-3)'; e.currentTarget.style.color = 'var(--fg)'; }}}
+                  onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--fg-3)'; }}}>
+                  <Icon size={14}/>{item.label}
+                </button>
+              );
+            })}
+          </>
+        )}
+      </div>
+
+      {/* User footer */}
+      <div style={{ borderTop: '1px solid var(--border)', padding: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {user?.avatar_url
+            ? <img src={user.avatar_url} alt="" style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid var(--border-2)', flexShrink: 0 }}/>
+            : <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--bg-3)', border: '1px solid var(--border-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'var(--fg-2)', flexShrink: 0 }}>{user?.email?.[0]?.toUpperCase()}</div>
+          }
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {user?.github_username || user?.email?.split('@')[0]}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--fg-4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {user?.email}
+            </div>
+          </div>
+          <button onClick={logout} title="Sign out"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-4)', padding: 4, borderRadius: 4, display: 'flex', alignItems: 'center', flexShrink: 0 }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--error)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--fg-4)'; }}>
+            <LogOut size={14}/>
+          </button>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+// ─── Page header ──────────────────────────────────────────────────────────────
+
+function PageHeader({ tag, title, sub, action }: { tag: string; title: string; sub: string; action?: React.ReactNode }) {
+  return (
+    <div style={{ padding: '32px 32px 0', marginBottom: 28 }}>
+      <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)', marginBottom: 6, letterSpacing: '0.01em' }}>{tag}</p>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+        <div>
+          <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--fg)', letterSpacing: '-0.02em', marginBottom: 6 }}>{title}</h1>
+          <p style={{ fontSize: 14, color: 'var(--fg-3)' }}>{sub}</p>
+        </div>
+        {action && <div style={{ flexShrink: 0 }}>{action}</div>}
+      </div>
+    </div>
+  );
+}
+
+// ─── Overview page ────────────────────────────────────────────────────────────
+
+function OverviewPage({ onStart }: { onStart: (url: string) => void }) {
+  const { user } = useAuthStore();
+  const { history, isAnalyzing, activeStatus } = useAnalysisStore();
+  const [url, setUrl] = useState('');
+
+  const submit = () => {
+    if (!url.trim() || !url.includes('github.com')) { toast.error('Enter a valid GitHub URL'); return; }
+    onStart(url.trim());
+  };
+
+  const credits = user?.credits ?? 0;
+  const creditPct = Math.min(100, (credits / 20) * 100);
+
+  return (
+    <div style={{ flex: 1, overflowY: 'auto' }}>
+      <PageHeader
+        tag="Overview"
+        title={`Welcome${user?.github_username ? ', ' + user.github_username : ''}.`}
+        sub="Analyze a GitHub repository to get architecture maps, security findings, and reports."
+        action={<a href="/pricing" style={{ display: 'flex', alignItems: 'center', gap: 6, height: 36, padding: '0 16px', borderRadius: 6, background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>Buy credits</a>}
+      />
+
+      <div style={{ padding: '0 32px', display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20 }}>
+
+        {/* Left */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+          {/* Analyze */}
+          <div style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 10, padding: 24 }}>
+            <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--fg)', marginBottom: 4 }}>New Analysis</h2>
+            <p style={{ fontSize: 13, color: 'var(--fg-3)', marginBottom: 20 }}>Paste a public or private GitHub repository URL. Analysis costs 5–10 credits.</p>
+
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+              <div style={{ position: 'relative', flex: 1 }}>
+                <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--fg-4)', pointerEvents: 'none' }}/>
+                <input type="url" value={url} onChange={e => setUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()}
+                  placeholder="https://github.com/owner/repository"
+                  className="input text-mono" style={{ paddingLeft: 32, fontSize: 12 }} disabled={isAnalyzing}/>
+              </div>
+              <button onClick={submit} disabled={!url.trim() || isAnalyzing} className="btn btn-primary"
+                style={{ height: 38, padding: '0 18px', opacity: (!url.trim() || isAnalyzing) ? 0.5 : 1 }}>
+                {isAnalyzing
+                  ? <span style={{ width: 14, height: 14, border: '2px solid rgba(0,0,0,0.2)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block', animation: 'spin .6s linear infinite' }}/>
+                  : <><span>Analyze</span><ArrowRight size={13}/></>}
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: isAnalyzing ? 16 : 0 }}>
+              {['vercel/next.js', 'tiangolo/fastapi', 'expressjs/express'].map(r => (
+                <button key={r} onClick={() => setUrl(`https://github.com/${r}`)} disabled={isAnalyzing}
+                  className="btn btn-secondary btn-sm text-mono" style={{ fontSize: 11 }}>{r}</button>
+              ))}
+            </div>
+
+            <AnimatePresence>
+              {isAnalyzing && activeStatus && (
+                <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                  <ProgressToast message={activeStatus.message} progress={activeStatus.progress}/>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Recent analyses */}
+          <div style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 10, padding: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)' }}>Recent activity</h2>
+              <span style={{ fontSize: 11, color: 'var(--fg-4)', fontFamily: 'JetBrains Mono, monospace' }}>{history.length} total</span>
+            </div>
+            {history.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                <GitBranch size={32} style={{ margin: '0 auto 12px', color: 'var(--fg-4)', display: 'block' }}/>
+                <p style={{ fontSize: 14, color: 'var(--fg-3)', marginBottom: 4 }}>No analyses yet</p>
+                <p style={{ fontSize: 12, color: 'var(--fg-4)' }}>Paste a GitHub URL above to run your first analysis.</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {history.slice(0, 8).map((a: any) => (
+                  <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 8, background: 'var(--bg-2)' }}>
+                    <GitBranch size={13} style={{ color: 'var(--fg-4)', flexShrink: 0 }}/>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {a.repo_name || a.repo_url?.split('/').slice(-2).join('/')}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--fg-4)', marginTop: 1 }}>
+                        {new Date(a.created_at).toLocaleDateString()} · {a.credits_used} credits used
+                      </div>
+                    </div>
+                    <span style={{
+                      padding: '2px 8px', borderRadius: 100, fontSize: 10, fontWeight: 600, fontFamily: 'JetBrains Mono, monospace', whiteSpace: 'nowrap',
+                      background: a.status === 'completed' ? 'rgba(0,179,65,0.1)' : a.status === 'failed' ? 'rgba(220,0,0,0.1)' : 'rgba(245,166,35,0.1)',
+                      color: a.status === 'completed' ? 'var(--success)' : a.status === 'failed' ? 'var(--error)' : 'var(--warning)',
+                      border: `1px solid ${a.status === 'completed' ? 'rgba(0,179,65,0.2)' : a.status === 'failed' ? 'rgba(220,0,0,0.2)' : 'rgba(245,166,35,0.2)'}`,
+                    }}>{a.status}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+          {/* Credits */}
+          <div style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 10, padding: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>Hosting Status</h3>
+              <span style={{ fontSize: 10, fontWeight: 700, fontFamily: 'JetBrains Mono, monospace', padding: '2px 8px', borderRadius: 100, background: credits > 0 ? 'rgba(0,179,65,0.1)' : 'rgba(220,0,0,0.1)', color: credits > 0 ? 'var(--success)' : 'var(--error)', border: `1px solid ${credits > 0 ? 'rgba(0,179,65,0.2)' : 'rgba(220,0,0,0.2)'}` }}>
+                {credits > 0 ? 'Active' : 'No credits'}
+              </span>
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--fg-4)', marginBottom: 4 }}>Credits remaining</div>
+            <div style={{ fontSize: 40, fontWeight: 700, color: 'var(--fg)', letterSpacing: '-0.04em', lineHeight: 1, marginBottom: 4 }}>
+              {credits}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--fg-4)', marginBottom: 14 }}>
+              Plan: <span style={{ color: 'var(--fg-2)', textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>{user?.plan || 'free'}</span>
+            </div>
+            <div style={{ height: 5, background: 'var(--bg-3)', borderRadius: 3, marginBottom: 14, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${creditPct}%`, background: creditPct > 50 ? 'var(--success)' : creditPct > 20 ? 'var(--warning)' : 'var(--error)', borderRadius: 3, transition: 'width .4s' }}/>
+            </div>
+            <a href="/pricing" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 36, borderRadius: 6, background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 600, textDecoration: 'none', transition: 'opacity .15s' }}
+              onMouseEnter={e => { e.currentTarget.style.opacity = '0.85'; }}
+              onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}>
+              Buy more credits
+            </a>
+          </div>
+
+          {/* Stats */}
+          <div style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 10, padding: 20 }}>
+            <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)', marginBottom: 14 }}>Uptime</h3>
+            {[
+              { label: 'Websites', value: history.filter((a:any) => a.status === 'completed').length, suffix: 'analyses' },
+              { label: 'Uptime', value: '99.9%', suffix: 'Excellent' },
+              { label: 'Performance', value: 'Great', suffix: '' },
+            ].map(s => (
+              <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+                <span style={{ fontSize: 12, color: 'var(--fg-3)' }}>{s.label}</span>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace' }}>{s.value}</div>
+                  {s.suffix && <div style={{ fontSize: 10, color: 'var(--fg-4)' }}>{s.suffix}</div>}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Notifications */}
+          <div style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 10, padding: 20 }}>
+            <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)', marginBottom: 14 }}>Notifications</h3>
+            <div style={{ fontSize: 12, color: 'var(--fg-4)', padding: '16px 0', textAlign: 'center' }}>No new notifications</div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ height: 32 }}/>
+    </div>
+  );
+}
+
+// ─── Analyses page ─────────────────────────────────────────────────────────────
+
+function AnalysesPage() {
+  const { history } = useAnalysisStore();
+  return (
+    <div style={{ flex: 1, overflowY: 'auto' }}>
+      <PageHeader tag="Analyses" title="Your analysis history." sub="All repository analyses run on your account."/>
+      <div style={{ padding: '0 32px' }}>
+        {history.length === 0 ? (
+          <div style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 10, padding: 48, textAlign: 'center' }}>
+            <History size={40} style={{ margin: '0 auto 16px', color: 'var(--fg-4)', display: 'block' }}/>
+            <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)', marginBottom: 6 }}>No analyses yet</p>
+            <p style={{ fontSize: 13, color: 'var(--fg-3)' }}>Go to Overview and paste a GitHub URL to run your first analysis.</p>
+          </div>
+        ) : (
+          <div style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 100px 80px', padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-2)' }}>
+              {['Repository', 'Date', 'Status', 'Credits'].map(h => (
+                <span key={h} style={{ fontSize: 11, fontWeight: 600, color: 'var(--fg-4)', letterSpacing: '0.04em', textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>{h}</span>
+              ))}
+            </div>
+            {history.map((a: any, i: number) => (
+              <div key={a.id} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 100px 80px', padding: '12px 16px', borderBottom: i < history.length - 1 ? '1px solid var(--border)' : 'none', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--fg)', fontFamily: 'JetBrains Mono, monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {a.repo_name || a.repo_url?.split('/').slice(-2).join('/')}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--fg-4)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.repo_url}</div>
+                </div>
+                <span style={{ fontSize: 12, color: 'var(--fg-3)' }}>{new Date(a.created_at).toLocaleDateString()}</span>
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 100, fontSize: 10, fontWeight: 600, fontFamily: 'JetBrains Mono, monospace', width: 'fit-content',
+                  background: a.status === 'completed' ? 'rgba(0,179,65,0.1)' : a.status === 'failed' ? 'rgba(220,0,0,0.1)' : 'rgba(245,166,35,0.1)',
+                  color: a.status === 'completed' ? 'var(--success)' : a.status === 'failed' ? 'var(--error)' : 'var(--warning)',
+                  border: `1px solid ${a.status === 'completed' ? 'rgba(0,179,65,0.2)' : a.status === 'failed' ? 'rgba(220,0,0,0.2)' : 'rgba(245,166,35,0.2)'}`,
+                }}>{a.status}</span>
+                <span style={{ fontSize: 12, color: 'var(--fg-3)', fontFamily: 'JetBrains Mono, monospace' }}>{a.credits_used}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <div style={{ height: 32 }}/>
+    </div>
+  );
+}
+
+// ─── Settings page ─────────────────────────────────────────────────────────────
+
+function SettingsPage() {
+  const { user, logout } = useAuthStore();
+  return (
+    <div style={{ flex: 1, overflowY: 'auto' }}>
+      <PageHeader tag="Account settings" title="Keep your account details clear." sub="Review the details used for billing, service communication, and dashboard access."/>
+      <div style={{ padding: '0 32px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, maxWidth: 1000 }}>
+
+        {/* Profile */}
+        <div style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 10, padding: 24 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)', marginBottom: 4 }}>Profile information</h3>
+          <p style={{ fontSize: 13, color: 'var(--fg-3)', marginBottom: 20 }}>Basic account information used across the portal.</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            {[
+              { label: 'Username', value: user?.github_username || '—' },
+              { label: 'Email', value: user?.email || '—' },
+              { label: 'Role', value: 'user' },
+              { label: 'Account status', value: 'Active' },
+            ].map(f => (
+              <div key={f.label} style={{ background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px' }}>
+                <div style={{ fontSize: 11, color: 'var(--fg-4)', marginBottom: 4 }}>{f.label}</div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Security */}
+        <div style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 10, padding: 24 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)', marginBottom: 4 }}>Security</h3>
+          <p style={{ fontSize: 13, color: 'var(--fg-3)', marginBottom: 20 }}>Session and password-related account actions.</p>
+          <div style={{ background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: 8, padding: 16, marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)', marginBottom: 4 }}>Password changes</div>
+            <div style={{ fontSize: 12, color: 'var(--fg-3)' }}>A self-service password update route is not available yet. Contact support if you need help changing your password.</div>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button style={{ height: 36, padding: '0 16px', borderRadius: 6, border: '1px solid var(--border-2)', background: 'transparent', color: 'var(--fg-2)', fontSize: 13, cursor: 'pointer' }}>
+              Change password
+            </button>
+            <button onClick={logout} style={{ height: 36, padding: '0 16px', borderRadius: 6, border: '1px solid var(--border-2)', background: 'transparent', color: 'var(--fg-2)', fontSize: 13, cursor: 'pointer' }}>
+              Sign out
+            </button>
+          </div>
+        </div>
+
+        {/* Notifications */}
+        <div style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 10, padding: 24 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)', marginBottom: 4 }}>Notification preferences</h3>
+          <p style={{ fontSize: 13, color: 'var(--fg-3)', marginBottom: 20 }}>Controls planned for the client portal.</p>
+          {[
+            { label: 'Billing emails', desc: 'Receive payment, renewal, and invoice-related email updates.' },
+            { label: 'Service update emails', desc: 'Receive analysis status and service updates by email.' },
+          ].map((n, i) => (
+            <div key={n.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0', borderBottom: i === 0 ? '1px solid var(--border)' : 'none' }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--fg)', marginBottom: 2 }}>{n.label}</div>
+                <div style={{ fontSize: 12, color: 'var(--fg-3)' }}>{n.desc}</div>
+              </div>
+              <div style={{ width: 36, height: 20, borderRadius: 10, background: 'var(--accent)', position: 'relative', flexShrink: 0, cursor: 'pointer' }}>
+                <div style={{ position: 'absolute', right: 3, top: 3, width: 14, height: 14, borderRadius: '50%', background: '#fff' }}/>
+              </div>
+            </div>
+          ))}
+          <p style={{ fontSize: 11, color: 'var(--fg-4)', marginTop: 12 }}>Preference saving is not wired yet — shown as intended default behavior.</p>
+        </div>
+
+        {/* Danger zone */}
+        <div style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 10, padding: 24 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)', marginBottom: 4 }}>Danger zone</h3>
+          <p style={{ fontSize: 13, color: 'var(--fg-3)', marginBottom: 20 }}>Need to close the account or resolve a sensitive issue?</p>
+          <p style={{ fontSize: 13, color: 'var(--fg-3)', marginBottom: 20 }}>Contact support for account closure, billing disputes, or other sensitive account requests.</p>
+          <a href="mailto:support@archdefend.io" style={{ display: 'inline-flex', alignItems: 'center', height: 36, padding: '0 16px', borderRadius: 6, background: 'rgba(220,0,0,0.08)', border: '1px solid rgba(220,0,0,0.2)', color: 'var(--error)', fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>
+            Contact support
+          </a>
+        </div>
+      </div>
+      <div style={{ height: 32 }}/>
+    </div>
+  );
+}
+
+// ─── Top bar ──────────────────────────────────────────────────────────────────
+
+function TopBar({ page }: { page: string }) {
+  const { user } = useAuthStore();
+  return (
+    <div style={{ height: 52, borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 28px', background: 'var(--bg-1)', flexShrink: 0 }}>
+      <div>
+        <div style={{ fontSize: 11, color: 'var(--fg-4)' }}>ArchDefend portal</div>
+        <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--fg)' }}>
+          Welcome, {user?.github_username || user?.email?.split('@')[0] || 'there'}
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <a href="mailto:support@archdefend.io" style={{ fontSize: 13, color: 'var(--fg-3)', textDecoration: 'none' }}>Contact support</a>
+      </div>
+    </div>
+  );
+}
+
+// ─── Dashboard root ────────────────────────────────────────────────────────────
+
+export default function DashboardPage() {
+  const { token, user, refreshUser } = useAuthStore();
+  const { activeAnalysisId, activeReport, isAnalyzing, startAnalysis, history, setHistory } = useAnalysisStore();
+  const { activeTab, setActiveTab } = useUIStore();
+  const [page, setPage] = useState('overview');
+
+  useEffect(() => {
+    if (token && !user) refreshUser();
+    else if (token) refreshUser(); // always refresh to get latest credits
+    if (token) api.getAnalysisHistory().then((d: any) => setHistory(d.analyses)).catch(() => {});
+  }, [token]);
+
+  const handleStart = useCallback(async (url: string) => {
+    try {
+      setPage('report');
+      setActiveTab('overview');
+      await startAnalysis(url);
+      toast.success('Analysis complete');
+      api.getAnalysisHistory().then((d: any) => setHistory(d.analyses)).catch(() => {});
+      // Refresh user to get updated credits
+      refreshUser();
+    } catch (err) {
+      toast.error(ArchDefendAPI.getErrorMessage(err));
+      setPage('overview');
+    }
+  }, [startAnalysis, setActiveTab, setHistory, refreshUser]);
+
+  const [GraphViewer, setGraphViewer] = useState<any>(null);
+  useEffect(() => {
+    import('@/components/graph/GraphViewer').then(m => setGraphViewer(() => m.GraphViewer));
+  }, []);
+
+  return (
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg)' }}>
+      <Sidebar page={page} setPage={setPage}/>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <TopBar page={page}/>
+        <main style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', background: 'var(--bg-1)' }}>
+          {page === 'overview' && <OverviewPage onStart={handleStart}/>}
+          {page === 'analyses' && <AnalysesPage/>}
+          {page === 'settings' && <SettingsPage/>}
+          {page === 'report' && activeAnalysisId && activeReport && (
+            <>
+              <ReportHeader report={activeReport} analysisId={activeAnalysisId}/>
+              <AnimatePresence mode="wait">
+                <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.12 }}>
+                  {activeTab === 'overview'  && <OverviewTab report={activeReport}/>}
+                  {activeTab === 'graph'     && GraphViewer && (
+                    <div style={{ height: 'calc(100vh - 140px)' }}>
+                      <GraphViewer nodes={activeReport.dependency_graph?.nodes ?? []} edges={activeReport.dependency_graph?.edges ?? []}/>
+                    </div>
+                  )}
+                  {activeTab === 'security'  && <SecurityTab  findings={activeReport.security_findings ?? []}/>}
+                  {activeTab === 'api'       && <APITab       routes={activeReport.api_inventory ?? []}/>}
+                  {activeTab === 'interview' && <InterviewTab questions={activeReport.interview_questions ?? []}/>}
+                  {activeTab === 'export'    && <ExportTab    analysisId={activeAnalysisId} report={activeReport}/>}
+                </motion.div>
+              </AnimatePresence>
+            </>
+          )}
+          {page === 'report' && isAnalyzing && (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ textAlign: 'center' }}>
+                <motion.span animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+                  style={{ display: 'inline-block', width: 28, height: 28, border: '2px solid var(--border-3)', borderTopColor: 'var(--accent)', borderRadius: '50%', marginBottom: 16 }}/>
+                <p style={{ fontSize: 13, color: 'var(--fg-3)' }}>Analyzing repository…</p>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  );
+}
