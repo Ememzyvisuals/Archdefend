@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, ArrowRight, Github, CheckCircle, ChevronDown,
@@ -260,15 +260,15 @@ function TrustBar() {
 
 // ─── Features ────────────────────────────────────────────────────────────────
 const FEATURES = [
-  {icon:<Network size={16}/>, title:'Dependency Graph',    desc:'Interactive architecture maps from real AST parsing. Trace imports, services, and boundaries.'},
-  {icon:<Lock size={16}/>,    title:'Security Analysis',   desc:'OWASP + CWE pattern scanning. Detects secrets, injection, path traversal, weak crypto.', tag:'Security'},
-  {icon:<Eye size={16}/>,     title:'Interview Defense',   desc:'Q&A grounded in your codebase architecture. Not generic — references actual design choices.', tag:'Unique'},
-  {icon:<Code2 size={16}/>,   title:'API Inventory',       desc:'Discovers endpoints, middleware, auth boundaries across FastAPI, Express, Django, Rails, and more.'},
-  {icon:<BarChart3 size={16}/>,title:'Readiness Score',   desc:'0–100 across logging, error handling, observability, test coverage, and deployment config.'},
-  {icon:<Download size={16}/>, title:'Export Engine',      desc:'PDF reports, PPTX slides, Markdown docs, HTML. Ready to share with your team or CTO.'},
-  {icon:<GitBranch size={16}/>,title:'14+ Languages',     desc:'Python, TypeScript, Go, Rust, Java, Kotlin, C#, Ruby, PHP, Swift, Scala, Elixir, C/C++.'},
-  {icon:<Shield size={16}/>,  title:'Anti-Hallucination', desc:'Every AI claim is cross-validated against parsed AST data. 98.3% accuracy. Fact-grounded.'},
-];
+  {iconName:'Network',   title:'Dependency Graph',    desc:'Interactive architecture maps from real AST parsing. Trace imports, services, and boundaries.'},
+  {iconName:'Lock',      title:'Security Analysis',   desc:'OWASP + CWE pattern scanning. Detects secrets, injection, path traversal, weak crypto.', tag:'Security'},
+  {iconName:'Eye',       title:'Interview Defense',   desc:'Q&A grounded in your codebase architecture. Not generic — references actual design choices.', tag:'Unique'},
+  {iconName:'Code2',     title:'API Inventory',       desc:'Discovers endpoints, methods, auth schemes, and data shapes. No manual OpenAPI required.'},
+  {iconName:'BarChart3', title:'Readiness Score',     desc:'0-100 across logging, error handling, test coverage, and scalability. Hard data, not vibes.'},
+  {iconName:'Download',  title:'Export Engine',       desc:'PDF reports, PPTX decks, Markdown docs. Share the findings with anyone, instantly.'},
+  {iconName:'GitBranch', title:'14+ Languages',       desc:'Python, TypeScript, Java, Go, Rust, Ruby, PHP, C#, C++, Kotlin, Scala, Swift, Dart, Elixir.'},
+  {iconName:'Shield',    title:'Anti-Hallucination',  desc:'Every AI claim is cross-validated against AST facts. If it cannot verify it, it will not say it.'},
+]
 
 function Features() {
   return (
@@ -292,7 +292,10 @@ function Features() {
               {f.tag
                 ? <span className="badge badge-cyan mb-4 block" style={{width:'fit-content'}}>{f.tag}</span>
                 : <div style={{height:26,marginBottom:16}}/>}
-              <div style={{ width:32, height:32, borderRadius:6, background:'var(--bg-2)', border:'1px solid var(--border-2)', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:16, color:'var(--fg-2)' }}>{f.icon}</div>
+              <div style={{ width:32, height:32, borderRadius:6, background:'var(--bg-2)', border:'1px solid var(--border-2)', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:16, color:'var(--fg-2)' }}>{React.createElement(
+                ({Network,Lock,Eye,Code2,BarChart3,Download,GitBranch,Shield} as any)[f.iconName] ?? Shield,
+                {size:16}
+              )}</div>
               <h3 style={{ fontSize:14, fontWeight:600, color:'var(--fg)', marginBottom:8 }}>{f.title}</h3>
               <p style={{ fontSize:13, color:'var(--fg-3)', lineHeight:1.6 }}>{f.desc}</p>
             </motion.div>
@@ -323,5 +326,4 @@ function HowItWorks() {
             Every architectural insight is cross-validated against actual parsed source code before reaching your report. No generic summaries. No hallucinations.
           </p>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
-            {[['&lt;90s','avg analysis time'],['98.3%','accuracy rate'],['14+','languages supported'],['0','lines executed']].map(([v,l])=>(
-   
+          
