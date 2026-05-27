@@ -63,10 +63,10 @@ class AnalysisStatusResponse(BaseModel):
 # ── Credit Estimation ─────────────────────────────────────────────────────────
 
 def estimate_credits(repo_url: str, include_security: bool) -> int:
-    """Estimate credit cost before cloning. Default to medium."""
-    base = settings.MEDIUM_REPO_CREDITS  # 15 credits
+    """Estimate credit cost before cloning. Default to small."""
+    base = settings.SMALL_REPO_CREDITS  # 5 credits — free tier users can run analyses
     if include_security:
-        base += settings.SECURITY_SCAN_CREDITS  # +15
+        base += 5  # minimal security surcharge
     return base
 
 
