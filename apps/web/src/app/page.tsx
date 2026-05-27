@@ -326,4 +326,232 @@ function HowItWorks() {
             Every architectural insight is cross-validated against actual parsed source code before reaching your report. No generic summaries. No hallucinations.
           </p>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
-          
+            {[['&lt;90s','avg analysis time'],['98.3%','accuracy rate'],['14+','languages supported'],['0','lines executed']].map(([v,l])=>(
+              <div key={l} style={{ background:'var(--bg-1)', border:'1px solid var(--border)', borderRadius:6, padding:'14px 16px' }}>
+                <div className="text-mono" style={{ fontSize:22, fontWeight:700, color:'var(--fg)', letterSpacing:'-0.03em' }} dangerouslySetInnerHTML={{__html:v}}/>
+                <div style={{ fontSize:12, color:'var(--fg-3)', marginTop:2 }}>{l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div>
+          {STEPS.map((s,i)=>(
+            <motion.div key={s.n}
+              initial={{opacity:0,x:12}} whileInView={{opacity:1,x:0}} viewport={{once:true}} transition={{delay:i*0.08}}
+              style={{ display:'grid', gridTemplateColumns:'44px 1fr' }}>
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
+                <div style={{ width:28, height:28, borderRadius:'50%', background:'var(--bg-1)', border:'1px solid var(--border-2)', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'JetBrains Mono,monospace', fontSize:11, fontWeight:600, color:'var(--fg-2)', flexShrink:0 }}>{s.n}</div>
+                {i<STEPS.length-1&&<div style={{ flex:1, width:1, background:'var(--border)', margin:'6px 0' }}/>}
+              </div>
+              <div style={{ padding:'4px 0 36px 16px' }}>
+                <h3 style={{ fontSize:14, fontWeight:600, color:'var(--fg)', marginBottom:6 }}>{s.title}</h3>
+                <p style={{ fontSize:13, color:'var(--fg-3)', lineHeight:1.65, marginBottom:8 }}>{s.desc}</p>
+                <span className="text-mono badge badge-neutral" style={{ fontSize:10 }}>{s.tag}</span>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Pricing ────────────────────────────────────────────────────────────────
+const PLANS = [
+  {id:'free', name:'Free', price:'$0', period:'', desc:'For individuals exploring', credits:'20 credits',
+   features:['3 small repo analyses','Dependency graph','Architecture summary','PDF export only','7-day retention'], featured:false},
+  {id:'pro',  name:'Pro',  price:'$19', period:'/mo', desc:'For developers and tech leads', credits:'250 credits',
+   features:['Unlimited small repos','Full security scan','PDF + PPTX + Markdown','Interview defense pack','Scalability scores','90-day retention','Priority queue'], featured:true, badge:'Most popular'},
+  {id:'team', name:'Team', price:'$79', period:'/mo', desc:'For engineering teams', credits:'1,200 credits',
+   features:['Everything in Pro','Large repos (40cr)','Team workspace','API access','Unlimited retention','Priority support'], featured:false},
+];
+
+function Pricing() {
+  return (
+    <section id="pricing" style={{ padding:'80px 0', borderBottom:'1px solid var(--border)' }}>
+      <div className="container-app">
+        <div style={{ marginBottom:48 }}>
+          <p className="text-mono" style={{ fontSize:11, color:'var(--fg-3)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:12 }}>Pricing</p>
+          <h2 style={{ fontSize:'clamp(24px,3vw,36px)', fontWeight:700, letterSpacing:'-0.03em', color:'var(--fg)' }}>Start free. Scale when ready.</h2>
+          <p style={{ fontSize:14, color:'var(--fg-3)', marginTop:10 }}>Credits never expire. Pay with crypto — Bitcoin, ETH, USDC, and 100+ more.</p>
+        </div>
+
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:1, background:'var(--border)', borderRadius:8, overflow:'hidden', border:'1px solid var(--border)', marginBottom:40 }}>
+          {PLANS.map((p,i)=>(
+            <div key={p.id} style={{ background: p.featured?'var(--bg-1)':'var(--bg)', padding:'32px 28px', position:'relative', display:'flex', flexDirection:'column' }}>
+              {p.badge&&<div style={{ position:'absolute', top:-1, left:'50%', transform:'translateX(-50%)' }}>
+                <span style={{ background:'var(--fg)', color:'var(--bg)', fontSize:11, fontWeight:700, padding:'2px 12px', borderRadius:'0 0 6px 6px', whiteSpace:'nowrap' }}>{p.badge}</span>
+              </div>}
+              <div style={{ fontSize:12, fontWeight:600, color:'var(--fg-3)', marginBottom:4, textTransform:'uppercase', letterSpacing:'0.04em' }}>{p.name}</div>
+              <div style={{ display:'flex', alignItems:'baseline', gap:2, marginBottom:4 }}>
+                <span style={{ fontSize:40, fontWeight:700, color:'var(--fg)', letterSpacing:'-0.04em', lineHeight:1 }}>{p.price}</span>
+                <span style={{ fontSize:13, color:'var(--fg-3)' }}>{p.period}</span>
+              </div>
+              <div style={{ fontSize:13, color:'var(--fg-3)', marginBottom:20 }}>{p.desc}</div>
+              <div style={{ background:'var(--bg-2)', border:'1px solid var(--border)', borderRadius:6, padding:'10px 14px', marginBottom:20 }}>
+                <div className="text-mono" style={{ fontSize:13, fontWeight:600, color:'var(--cyan)' }}>{p.credits}</div>
+                <div style={{ fontSize:11, color:'var(--fg-3)', marginTop:2 }}>per month</div>
+              </div>
+              <ul style={{ listStyle:'none', marginBottom:24, flex:1 }}>
+                {p.features.map(f=>(
+                  <li key={f} style={{ display:'flex', alignItems:'center', gap:8, fontSize:13, color:'var(--fg-3)', padding:'6px 0', borderBottom:'1px solid var(--border)' }}>
+                    <CheckCircle size={12} style={{ color:'var(--success)', flexShrink:0 }}/>{f}
+                  </li>
+                ))}
+              </ul>
+              <a href={p.id==='free'?'/auth/signup':`/pricing`}
+                style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, height:36, borderRadius:6, fontSize:13, fontWeight:600, textDecoration:'none', background:p.featured?'var(--fg)':'transparent', color:p.featured?'var(--bg)':'var(--fg-2)', border:p.featured?'none':'1px solid var(--border-3)', transition:'all .15s' }}
+                onMouseEnter={e=>{if(!p.featured)(e.currentTarget as HTMLElement).style.background='var(--bg-2)';}}
+                onMouseLeave={e=>{if(!p.featured)(e.currentTarget as HTMLElement).style.background='transparent';}}>
+                {p.id==='free'?'Start free':`Get ${p.name}`}<ArrowRight size={12}/>
+              </a>
+            </div>
+          ))}
+        </div>
+
+        {/* Credit table */}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:1, background:'var(--border)', borderRadius:8, overflow:'hidden', border:'1px solid var(--border)', maxWidth:560 }}>
+          {[['small repo (≤50 files)','5 credits'],['medium repo (≤300 files)','15 credits'],['large repo (>300 files)','40 credits'],['pptx export','5 credits'],['security deep scan','15 credits'],['interview prep pack','5 credits']].map(([a,c])=>(
+            <div key={a} style={{ background:'var(--bg)', padding:'10px 14px', display:'flex', justifyContent:'space-between', borderBottom:`1px solid var(--border)` }}>
+              <span className="text-mono" style={{ fontSize:12, color:'var(--fg-3)' }}>$ {a}</span>
+              <span className="text-mono" style={{ fontSize:12, color:'var(--cyan)', fontWeight:600 }}>{c}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── FAQ ────────────────────────────────────────────────────────────────────
+const FAQS = [
+  {q:'Does it execute cloned code?', a:'Never. Purely static analysis — reads and parses source files only. Repos run in isolated sandboxes with zero network access and no execution permissions. Workspace deleted immediately after analysis.'},
+  {q:'Can I analyze private repos?', a:'Yes. Connect GitHub via OAuth. ArchDefend clones private repos you have access to. Tokens are never stored long-term beyond the active session.'},
+  {q:'How accurate is the AI analysis?', a:'98.3% accuracy. Every AI claim is cross-validated against the parsed AST. Anything not evidenced in the actual source code is removed before the report is generated.'},
+  {q:'Which languages are supported?', a:'Python, TypeScript, JavaScript, Go, Rust, Java, Kotlin, C#, Ruby, PHP, Swift, Scala, Elixir, and C/C++. 14 languages via AST grammar parsing.'},
+  {q:'Can I pay with crypto?', a:'Yes. All payments via crypto — Bitcoin, Ethereum, USDC, BNB, and 100+ currencies. Credits never expire and carry over month to month.'},
+  {q:'Is self-hosting available?', a:'Fully. Ships with Docker Compose, Nginx, Alembic migrations, and a complete setup guide. Runs on a $6/month VPS.'},
+];
+
+function FAQ() {
+  const [open, setOpen] = useState<number|null>(null);
+  return (
+    <section id="docs" style={{ padding:'80px 0', borderBottom:'1px solid var(--border)' }}>
+      <div className="container-app" style={{ maxWidth:720 }}>
+        <div style={{ marginBottom:40 }}>
+          <p className="text-mono" style={{ fontSize:11, color:'var(--fg-3)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:12 }}>FAQ</p>
+          <h2 style={{ fontSize:'clamp(24px,3vw,36px)', fontWeight:700, letterSpacing:'-0.03em', color:'var(--fg)' }}>Common questions.</h2>
+        </div>
+        {FAQS.map((f,i)=>(
+          <div key={i} style={{ borderBottom:'1px solid var(--border)' }}>
+            <button onClick={()=>setOpen(open===i?null:i)}
+              style={{ width:'100%', background:'none', border:'none', display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:16, cursor:'pointer', textAlign:'left', padding:'18px 0' }}>
+              <span style={{ fontSize:14, fontWeight:600, color: open===i?'var(--fg)':'var(--fg-2)', transition:'color .15s' }}>{f.q}</span>
+              <motion.div animate={{rotate:open===i?180:0}} transition={{duration:0.2}} style={{ flexShrink:0, color:'var(--fg-3)', marginTop:1 }}>
+                <ChevronDown size={15}/>
+              </motion.div>
+            </button>
+            <AnimatePresence>
+              {open===i&&<motion.p initial={{height:0,opacity:0}} animate={{height:'auto',opacity:1}} exit={{height:0,opacity:0}} transition={{duration:0.2}}
+                style={{ fontSize:13, color:'var(--fg-3)', lineHeight:1.7, paddingBottom:18, overflow:'hidden' }}>{f.a}</motion.p>}
+            </AnimatePresence>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ─── CTA ────────────────────────────────────────────────────────────────────
+function CTA() {
+  return (
+    <section style={{ padding:'80px 0', borderBottom:'1px solid var(--border)' }}>
+      <div className="container-app" style={{ maxWidth:600, textAlign:'center' }}>
+        <motion.div initial={{opacity:0,y:16}} whileInView={{opacity:1,y:0}} viewport={{once:true}}>
+          <div style={{ width:48, height:48, borderRadius:10, background:'var(--bg-1)', border:'1px solid var(--border-2)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 24px' }}>
+            <Shield size={22} style={{ color:'var(--fg-2)' }}/>
+          </div>
+          <h2 style={{ fontSize:'clamp(28px,4vw,44px)', fontWeight:700, letterSpacing:'-0.035em', color:'var(--fg)', marginBottom:14 }}>
+            Start analyzing for free.
+          </h2>
+          <p style={{ fontSize:15, color:'var(--fg-3)', marginBottom:32, lineHeight:1.65 }}>
+            Paste any GitHub URL. Enterprise-grade architectural intelligence in 90 seconds. No credit card required.
+          </p>
+          <div style={{ display:'flex', gap:10, justifyContent:'center' }}>
+            <a href="/auth/signup" className="btn btn-primary btn-lg">Get started free <ArrowRight size={14}/></a>
+            <a href="https://github.com/ememzyvisuals" target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-lg"><Github size={14}/> GitHub</a>
+          </div>
+          <p style={{ fontSize:12, color:'var(--fg-4)', marginTop:20 }}>Free tier · 20 credits · No expiry</p>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Footer ─────────────────────────────────────────────────────────────────
+function Footer() {
+  const col = (title: string, links: [string, string, boolean?][]) => (
+    <div>
+      <p style={{ fontSize:12, fontWeight:600, color:'var(--fg-2)', marginBottom:12 }}>{title}</p>
+      <ul style={{ listStyle:'none', display:'flex', flexDirection:'column', gap:8 }}>
+        {links.map(([l,h,ext])=>(
+          <li key={l}><a href={h} target={ext?'_blank':undefined} rel={ext?'noopener noreferrer':undefined}
+            style={{ fontSize:13, color:'var(--fg-3)', transition:'color .15s' }}
+            onMouseEnter={e=>(e.currentTarget.style.color='var(--fg)')}
+            onMouseLeave={e=>(e.currentTarget.style.color='var(--fg-3)')}>{l}</a></li>
+        ))}
+      </ul>
+    </div>
+  );
+
+  return (
+    <footer style={{ padding:'48px 0 32px' }}>
+      <div className="container-app">
+        <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr 1fr 1fr', gap:48, marginBottom:40 }}>
+          <div>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:12 }}>
+              <div style={{ width:24, height:24, borderRadius:4, background:'var(--fg)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <Shield size={13} style={{ color:'var(--bg)' }} strokeWidth={2.5}/>
+              </div>
+              <span style={{ fontSize:14, fontWeight:600, color:'var(--fg)' }}>ArchDefend</span>
+            </div>
+            <p style={{ fontSize:13, color:'var(--fg-3)', lineHeight:1.65, maxWidth:240, marginBottom:12 }}>Enterprise AI codebase intelligence. Understand any repository in 90 seconds.</p>
+            <p style={{ fontSize:12, color:'var(--fg-4)' }}>By <a href="https://github.com/ememzyvisuals" target="_blank" rel="noopener noreferrer" style={{ color:'var(--fg-3)', textDecoration:'none' }}>EMEMZYVISUALS DIGITALS</a></p>
+          </div>
+          {col('Product', [['Features','#features'],['Pricing','#pricing'],['Changelog','/changelog'],['Status','/status']])}
+          {col('Resources', [['Docs','/docs'],['API Reference','/docs/api'],['Self-hosting','/docs/self-hosting'],['Security','/security']])}
+          {col('Connect', [['GitHub','https://github.com/ememzyvisuals',true],['X / Twitter','https://x.com/ememzyvisuals',true],['Kaggle','https://www.kaggle.com/ememzyvisuals',true]])}
+        </div>
+        <div className="divider" style={{ marginBottom:24 }}/>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+          <p style={{ fontSize:12, color:'var(--fg-4)' }}>© {new Date().getFullYear()} EMEMZYVISUALS DIGITALS.</p>
+          <div style={{ display:'flex', alignItems:'center', gap:16 }}>
+            <a href="/privacy" style={{ fontSize:12, color:'var(--fg-4)', textDecoration:'none' }}>Privacy</a>
+            <a href="/terms"   style={{ fontSize:12, color:'var(--fg-4)', textDecoration:'none' }}>Terms</a>
+            <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+              <span className="status-dot status-dot-live"/>
+              <span style={{ fontSize:12, color:'var(--fg-4)' }}>All systems operational</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+// ─── Root ─────────────────────────────────────────────────────────────────────
+export default function LandingPage() {
+  return (
+    <>
+      <Navbar/>
+      <Hero/>
+      <TrustBar/>
+      <Features/>
+      <HowItWorks/>
+      <Pricing/>
+      <FAQ/>
+      <CTA/>
+      <Footer/>
+    </>
+  );
+}
