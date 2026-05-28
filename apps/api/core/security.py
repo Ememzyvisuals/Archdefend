@@ -7,7 +7,7 @@ Used via Depends() in every protected route.
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -72,21 +72,31 @@ def verify_password(plain: str, hashed: str) -> bool:
 async def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
     db: AsyncSession = Depends(get_db),
+    token: Optional[str] = Query(default=None),
 ):
     """
     FastAPI dependency: extract + validate JWT, return User ORM object.
+    Accepts token from Authorization header OR ?token= query param (for downloads).
     Usage: current_user: User = Depends(get_current_user)
     """
     from models.models import User
+    from fastapi import Request
 
-    if credentials is None or credentials.scheme.lower() != "bearer":
+    # Prefer header, fall back to query param
+    raw_token = None
+    if credentials is not None and credentials.scheme.lower() == "bearer":
+        raw_token = credentials.credentials
+    elif token:
+        raw_token = token
+
+    if not raw_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication required",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    payload = decode_token(credentials.credentials)
+    payload = decode_token(raw_token)
     user_id: str = payload["sub"]
 
     result = await db.execute(select(User).where(User.id == user_id))
