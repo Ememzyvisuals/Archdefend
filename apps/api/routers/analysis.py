@@ -252,7 +252,14 @@ async def stream_analysis_progress(
     if not analysis:
         raise HTTPException(status_code=404, detail="Analysis not found")
 
+    # Capture the analysis_id and user_id as plain values — the DB session
+    # from Depends(get_db) closes after the endpoint returns, so we must
+    # open a fresh session inside the generator for each poll.
+    _analysis_id = str(analysis.id)
+    _user_id = str(current_user.id)
+
     async def event_generator():
+        from core.database import AsyncSessionLocal
         last_status = None
         last_progress = -1
         timeout = 300  # 5 min max stream
@@ -260,10 +267,21 @@ async def stream_analysis_progress(
         for _ in range(timeout * 2):  # Poll every 0.5s
             await asyncio.sleep(0.5)
 
-            # Re-fetch from DB
-            await db.refresh(analysis)
-            current_status = analysis.status.value
-            current_progress = analysis.progress_pct or 0
+            # Open a fresh session each poll — the request-scoped session
+            # is already closed by the time the generator runs.
+            try:
+                async with AsyncSessionLocal() as poll_db:
+                    poll_result = await poll_db.execute(
+                        select(Analysis).where(Analysis.id == _analysis_id)
+                    )
+                    fresh = poll_result.scalar_one_or_none()
+                    if not fresh:
+                        break
+                    current_status = fresh.status.value
+                    current_progress = fresh.progress_pct or 0
+            except Exception as e:
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+                break
 
             if current_status != last_status or current_progress != last_progress:
                 last_status = current_status
