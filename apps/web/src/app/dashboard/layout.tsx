@@ -7,24 +7,24 @@ import { api } from '@/lib/api';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { token, user, setUser } = useAuthStore();
+  const { token, refreshUser, logout } = useAuthStore();
 
   useEffect(() => {
     if (!token) {
       router.replace('/auth/login?next=/dashboard');
       return;
     }
-    // Validate token and refresh user data on mount
-    if (!user) {
-      api.getMe()
-        .then(setUser)
-        .catch(() => {
-          router.replace('/auth/login?reason=session_expired');
-        });
-    }
+    // CRITICAL: re-inject token into api client on every mount/reload
+    // Zustand rehydrates the token value from localStorage but doesn't
+    // re-run the setToken action, so api.setToken() was never called.
+    api.setToken(token);
+
+    // Validate token is still good and get fresh user data
+    refreshUser().catch(() => {
+      logout();
+    });
   }, [token]);
 
-  // Show nothing while redirecting
   if (!token) return null;
 
   return <>{children}</>;
