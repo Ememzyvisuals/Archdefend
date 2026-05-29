@@ -205,9 +205,7 @@ function ArchSummary({ text }: { text?: string | null }) {
 
   // Split into paragraphs by double newline or numbered sections
   const paragraphs = cleaned
-    .split(/
-
-+/)
+    .split(/\n\n+/)
     .map((p: string) => p.trim())
     .filter(Boolean);
 
