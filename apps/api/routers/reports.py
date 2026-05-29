@@ -32,8 +32,8 @@ async def export_pdf(
     from services.export_engine.exporter import export_engine
 
     pdf_bytes = await export_engine.pdf(
-        report_data=_report_to_dict(report),
-        analysis_meta={"repo_name": analysis.repo_name, "repo_url": analysis.repo_url, "file_count": analysis.file_count},
+        report=_report_to_dict(report),
+        meta={"repo_name": analysis.repo_name, "repo_url": analysis.repo_url, "file_count": analysis.file_count},
     )
 
     return Response(
@@ -66,8 +66,8 @@ async def export_pptx(
     from models.models import CreditTransaction
 
     pptx_bytes = await export_engine.pptx(
-        report_data=_report_to_dict(report),
-        analysis_meta={"repo_name": analysis.repo_name, "repo_url": analysis.repo_url},
+        report=_report_to_dict(report),
+        meta={"repo_name": analysis.repo_name, "repo_url": analysis.repo_url},
     )
 
     # Deduct credits
@@ -103,8 +103,8 @@ async def export_markdown(
 
     from services.export_engine.exporter import export_engine
     md = await export_engine.markdown(
-        report_data=_report_to_dict(report),
-        analysis_meta={"repo_url": analysis.repo_url, "file_count": analysis.file_count},
+        report=_report_to_dict(report),
+        meta={"repo_url": analysis.repo_url, "file_count": analysis.file_count},
     )
 
     return Response(
