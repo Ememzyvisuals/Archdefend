@@ -67,8 +67,12 @@ export function LoginPage() {
       const { access_token, user } = await api.login(email, password);
       setToken(access_token); setUser(user);
       router.push('/dashboard');
-    } catch (err) {
-      setError(ArchDefendAPI.getErrorMessage(err));
+    } catch (err: any) {
+      if (err?.code === 'ERR_NETWORK' || err?.message?.includes('Network Error')) {
+        setError('Cannot connect to the server. Please try again in a moment.');
+      } else {
+        setError(ArchDefendAPI.getErrorMessage(err));
+      }
     } finally { setLoading(false); }
   };
 
@@ -148,8 +152,12 @@ export function SignupPage() {
       const { access_token, user } = await api.signup(email, password);
       setToken(access_token); setUser(user);
       router.push('/dashboard');
-    } catch (err) {
-      setError(ArchDefendAPI.getErrorMessage(err));
+    } catch (err: any) {
+      if (err?.code === 'ERR_NETWORK' || err?.message?.includes('Network Error')) {
+        setError('Cannot connect to the server. Please try again in a moment.');
+      } else {
+        setError(ArchDefendAPI.getErrorMessage(err));
+      }
     } finally { setLoading(false); }
   };
 
