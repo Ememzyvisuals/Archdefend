@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, ArrowRight, Github, CheckCircle, ChevronDown,
