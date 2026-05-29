@@ -17,9 +17,17 @@ class ArchDefendAPI {
     });
 
     // Attach JWT token to every request
+    // Reads from the Zustand persisted store key
     this.client.interceptors.request.use(config => {
       if (typeof window !== 'undefined') {
-        const token = localStorage.getItem('archdefend_token');
+        // Try direct token first, then fall back to Zustand store
+        let token = localStorage.getItem('archdefend_token');
+        if (!token) {
+          try {
+            const store = JSON.parse(localStorage.getItem('archdefend-auth') || '{}');
+            token = store?.state?.token || null;
+          } catch {}
+        }
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
@@ -51,7 +59,13 @@ class ArchDefendAPI {
 
   getToken(): string | null {
     if (typeof window === 'undefined') return null;
-    return localStorage.getItem('archdefend_token');
+    // Try direct key first, then Zustand store
+    const direct = localStorage.getItem('archdefend_token');
+    if (direct) return direct;
+    try {
+      const store = JSON.parse(localStorage.getItem('archdefend-auth') || '{}');
+      return store?.state?.token || null;
+    } catch { return null; }
   }
 
   // ── Auth ────────────────────────────────────────────────────────────────────
