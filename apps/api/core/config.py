@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     ALLOWED_HOSTS: List[str] = ["*"]
     CORS_ORIGINS: List[str] = [
         "http://localhost:3000",
+        "http://localhost:3001",
+        "https://archdefend.vercel.app",
         "https://archdefend.io",
         "https://www.archdefend.io",
     ]
@@ -112,4 +114,3 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-
