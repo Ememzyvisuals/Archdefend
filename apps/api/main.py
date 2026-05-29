@@ -37,10 +37,40 @@ logger = logging.getLogger("archdefend")
 async def lifespan(app: FastAPI):
     """Application lifecycle management."""
     logger.info("🚀 ArchDefend API starting up...")
-    # Start daily credit reset background task
-    import asyncio
-    from services.credit_reset import run_credit_reset_loop
-    reset_task = asyncio.create_task(run_credit_reset_loop())
+    # Daily credit reset — inline to avoid module import issues
+    import asyncio as _asyncio
+
+    async def _credit_reset_loop():
+        from core.database import AsyncSessionLocal
+        from models.models import User, PlanTier, CreditTransaction
+        from sqlalchemy import select
+        from datetime import datetime, timezone, timedelta
+        while True:
+            try:
+                await _asyncio.sleep(30 * 60)  # check every 30 min
+                async with AsyncSessionLocal() as db:
+                    result = await db.execute(
+                        select(User).where(User.plan == PlanTier.FREE, User.credits < 20)
+                    )
+                    users = result.scalars().all()
+                    for user in users:
+                        last = user.updated_at or user.created_at
+                        if last:
+                            if last.tzinfo is None:
+                                last = last.replace(tzinfo=timezone.utc)
+                            if (datetime.now(timezone.utc) - last) >= timedelta(hours=24):
+                                old_credits = user.credits
+                                user.credits = 20
+                                db.add(CreditTransaction(
+                                    user_id=user.id, amount=20 - old_credits,
+                                    balance_after=20, reason="daily_reset"
+                                ))
+                    await db.commit()
+                    logger.info(f"Credit reset checked: {len(users)} users processed")
+            except Exception as e:
+                logger.error(f"Credit reset error: {e}")
+
+    reset_task = _asyncio.create_task(_credit_reset_loop())
     logger.info("✅ ArchDefend API ready — daily credit reset active")
     yield
     reset_task.cancel()
