@@ -177,6 +177,60 @@ function ReportHeader({ report, analysisId }: { report: AnalysisReport; analysis
 
 // ─── Overview tab ─────────────────────────────────────────────────────────────
 
+
+// ─── ArchSummary — strips JSON fences, renders clean paragraphs ───────────────
+
+function ArchSummary({ text }: { text?: string | null }) {
+  if (!text) return <p style={{ fontSize:13, color:'var(--fg-4)' }}>No summary generated.</p>;
+
+  // Strip markdown code fences and attempt to extract plain text from JSON
+  let cleaned = text.trim();
+
+  // Remove ```json ... ``` or ``` ... ``` wrappers
+  cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '');
+
+  // If it still looks like JSON, try to extract architecture_summary or description field
+  if (cleaned.startsWith('{') || cleaned.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(cleaned);
+      cleaned = parsed.architecture_summary
+        || parsed.summary
+        || parsed.description
+        || parsed.text
+        || (typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
+    } catch {
+      // Not valid JSON — use as-is
+    }
+  }
+
+  // Split into paragraphs by double newline or numbered sections
+  const paragraphs = cleaned
+    .split(/
+
++/)
+    .map((p: string) => p.trim())
+    .filter(Boolean);
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+      {paragraphs.map((para: string, i: number) => {
+        // Headers: lines starting with ## or 1. 2. etc
+        const isHeader = /^#{1,3}\s/.test(para) || /^\d+\.\s\*\*/.test(para);
+        const cleanPara = para
+          .replace(/^#{1,3}\s/, '')
+          .replace(/\*\*(.*?)\*\*/g, '$1')
+          .replace(/\*(.*?)\*/g, '$1');
+
+        return isHeader ? (
+          <p key={i} style={{ fontSize:13, fontWeight:600, color:'var(--fg)', marginTop: i > 0 ? 4 : 0 }}>{cleanPara}</p>
+        ) : (
+          <p key={i} style={{ fontSize:13, color:'var(--fg-3)', lineHeight:1.75 }}>{cleanPara}</p>
+        );
+      })}
+    </div>
+  );
+}
+
 function OverviewTab({ report }: { report: AnalysisReport }) {
   const { setActiveTab } = useUIStore();
   const criticals = report.security_findings?.filter(f => f.severity === 'critical') ?? [];
@@ -205,9 +259,7 @@ function OverviewTab({ report }: { report: AnalysisReport }) {
         {/* Architecture summary */}
         <div style={{ background: 'var(--bg)', padding: '24px', borderBottom: '1px solid var(--border)' }}>
           <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)', marginBottom: 12 }}>Architecture Summary</h3>
-          <p style={{ fontSize: 13, color: 'var(--fg-3)', lineHeight: 1.7 }}>
-            {report.architecture_summary || 'No summary generated.'}
-          </p>
+          <ArchSummary text={report.architecture_summary}/>
         </div>
 
         {/* Tech stack */}
