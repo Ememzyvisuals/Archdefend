@@ -56,15 +56,17 @@ def decode_token(token: str) -> dict:
 
 
 def hash_password(password: str) -> str:
-    if not pwd_context:
-        raise RuntimeError("passlib not installed")
-    return pwd_context.hash(password)
+    # Truncate to 72 bytes — bcrypt hard limit
+    pwd_bytes = password.encode("utf-8")[:72]
+    return _bcrypt.hashpw(pwd_bytes, _bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    if not pwd_context:
+    try:
+        pwd_bytes = plain.encode("utf-8")[:72]
+        return _bcrypt.checkpw(pwd_bytes, hashed.encode("utf-8"))
+    except Exception:
         return False
-    return pwd_context.verify(plain, hashed)
 
 
 # ── FastAPI Dependency ────────────────────────────────────────────────────────
