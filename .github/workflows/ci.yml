@@ -1,0 +1,64 @@
+name: ArchDefend CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-frontend:
+    name: Lint Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm install
+      - name: Lint
+        run: cd apps/web && npm run lint
+
+  type-check-frontend:
+    name: Type Check Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm install
+      - name: Type Check
+        run: cd apps/web && npx tsc --noEmit
+
+  lint-backend:
+    name: Lint Backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install deps
+        run: |
+          cd apps/api
+          pip install ruff
+      - name: Ruff lint
+        run: cd apps/api && ruff check . --ignore E501,E402
+
+  deploy-render:
+    name: Trigger Render Deploy
+    runs-on: ubuntu-latest
+    needs: [lint-frontend, lint-backend]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Trigger Render Deploy Hook
+        run: |
+          if [ -n "${{ secrets.RENDER_DEPLOY_HOOK }}" ]; then
+            curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+            echo "Render deploy triggered"
+          else
+            echo "RENDER_DEPLOY_HOOK not set — skipping"
+          fi

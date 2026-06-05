@@ -1,0 +1,30 @@
+{
+  "framework": "nextjs",
+  "rootDirectory": "apps/web",
+  "outputDirectory": ".next",
+  "installCommand": "npm install",
+  "buildCommand": "npm run build",
+  "regions": ["iad1"],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/v1/:path*",
+      "destination": "https://archdefend-api.onrender.com/api/v1/:path*"
+    }
+  ],
+  "env": {
+    "NEXT_PUBLIC_API_URL": "https://archdefend-api.onrender.com",
+    "NEXT_PUBLIC_APP_URL": "https://archdefend.vercel.app"
+  }
+}

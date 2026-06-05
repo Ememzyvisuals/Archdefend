@@ -1,0 +1,266 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* Chirp font - Twitter's system font stack approximation */
+@font-face {
+  font-family: 'Chirp';
+  src: local('-apple-system'), local('BlinkMacSystemFont'), local('Segoe UI');
+  font-display: swap;
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 55%;
+    --accent: 0 0% 12%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 239 84% 67%;
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Chirp', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background-color: #0a0a0a;
+    min-height: 100vh;
+  }
+
+  ::selection {
+    background: rgba(99, 102, 241, 0.3);
+    color: white;
+  }
+
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(99, 102, 241, 0.3);
+    border-radius: 2px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(99, 102, 241, 0.5);
+  }
+}
+
+@layer components {
+  /* Card component matching screenshot dark cards */
+  .arch-card {
+    @apply bg-[#111111] border border-white/[0.06] rounded-2xl;
+    background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+
+  .arch-card-hover {
+    @apply arch-card transition-all duration-200;
+  }
+
+  .arch-card-hover:hover {
+    border-color: rgba(99, 102, 241, 0.2);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.6), 0 0 0 1px rgba(99,102,241,0.1), inset 0 1px 0 rgba(255,255,255,0.06);
+    transform: translateY(-1px);
+  }
+
+  /* Section badge like screenshots */
+  .section-badge {
+    @apply inline-flex items-center px-4 py-1.5 rounded-full text-xs font-medium tracking-widest uppercase;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.04);
+    color: rgba(255,255,255,0.6);
+    letter-spacing: 0.12em;
+  }
+
+  /* Primary button - white pill like screenshots */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-semibold text-sm transition-all duration-200;
+    background: #ffffff;
+    color: #0a0a0a;
+  }
+
+  .btn-primary:hover {
+    background: rgba(255,255,255,0.92);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(255,255,255,0.15);
+  }
+
+  /* Secondary button - dark outline like screenshots */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-semibold text-sm transition-all duration-200;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.9);
+  }
+
+  .btn-secondary:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.2);
+  }
+
+  /* Step connector dots like screenshots */
+  .step-connector {
+    @apply w-px bg-white/10 mx-auto;
+    height: 20px;
+  }
+
+  /* Sidebar nav item */
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer;
+    color: rgba(255,255,255,0.5);
+  }
+
+  .nav-item:hover {
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.85);
+  }
+
+  .nav-item.active {
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.95);
+    border-left: 2px solid #6366f1;
+    padding-left: calc(0.75rem - 2px);
+  }
+
+  /* Status badge */
+  .status-active {
+    @apply inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full;
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+  }
+
+  .status-inactive {
+    @apply inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full;
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.4);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .status-queued {
+    @apply inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full;
+    background: rgba(99, 102, 241, 0.12);
+    color: #818cf8;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+  }
+
+  .status-error {
+    @apply inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full;
+    background: rgba(239, 68, 68, 0.12);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+  }
+
+  /* Integration row */
+  .integration-row {
+    @apply flex items-center justify-between p-4 rounded-xl;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.02);
+  }
+
+  /* Metric card */
+  .metric-card {
+    @apply p-5 rounded-xl;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  /* Grid background */
+  .grid-bg {
+    background-image: linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* Glowing dot */
+  .glow-dot {
+    @apply w-2 h-2 rounded-full bg-[#06b6d4];
+    box-shadow: 0 0 8px rgba(6, 182, 212, 0.8), 0 0 16px rgba(6, 182, 212, 0.4);
+  }
+
+  /* Security severity colors */
+  .severity-critical { @apply text-red-400 bg-red-400/10 border-red-400/20; }
+  .severity-high { @apply text-orange-400 bg-orange-400/10 border-orange-400/20; }
+  .severity-medium { @apply text-yellow-400 bg-yellow-400/10 border-yellow-400/20; }
+  .severity-low { @apply text-blue-400 bg-blue-400/10 border-blue-400/20; }
+  .severity-info { @apply text-gray-400 bg-gray-400/10 border-gray-400/20; }
+
+  /* Shimmer loading */
+  .shimmer {
+    background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.07) 50%, rgba(255,255,255,0.03) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+  }
+
+  /* Tab underline */
+  .tab-active {
+    @apply border-b-2 border-white text-white font-medium;
+  }
+
+  .tab-inactive {
+    @apply text-white/40 hover:text-white/70 transition-colors;
+  }
+}
+
+/* React Flow overrides */
+.react-flow__background {
+  background: transparent !important;
+}
+
+.react-flow__controls {
+  background: rgba(17, 17, 17, 0.9) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+}
+
+.react-flow__controls-button {
+  background: transparent !important;
+  border: none !important;
+  color: rgba(255,255,255,0.5) !important;
+}
+
+.react-flow__controls-button:hover {
+  background: rgba(255,255,255,0.08) !important;
+  color: rgba(255,255,255,0.9) !important;
+}
+
+.react-flow__minimap {
+  background: rgba(17, 17, 17, 0.9) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 8px !important;
+}
