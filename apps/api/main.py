@@ -16,7 +16,6 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
 from config import settings
-from database import init_db
 from routers.auth import router as auth_router
 from routers.repositories import router as repositories_router
 from routers.analyses import router as analyses_router
@@ -38,8 +37,11 @@ async def lifespan(app: FastAPI):
     log.info("ArchDefend API starting",
              environment=settings.ENVIRONMENT,
              api_prefix=settings.api_prefix)
-    await init_db()
-    log.info("Database initialized")
+    # Schema is managed entirely by Alembic (runs via `alembic upgrade head`
+    # before uvicorn starts in render.yaml). Calling SQLModel.metadata.create_all
+    # here caused a UUID/VARCHAR type mismatch crash because Supabase's users
+    # table has id as UUID but SQLModel declared it as VARCHAR.
+    log.info("Database ready (schema managed by Alembic)")
     yield
     log.info("ArchDefend API shutting down")
 
