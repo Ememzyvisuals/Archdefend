@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import {
   Github, Shield, GitBranch, Cpu, BarChart3, FileText,
-  Search, Lock, Menu, X, Check, ChevronDown, Star, Zap
+  Search, Lock, Menu, X, Check, ChevronDown, Star
 } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { AuthModal } from "@/components/auth/auth-modal";
