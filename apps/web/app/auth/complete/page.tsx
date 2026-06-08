@@ -1,12 +1,16 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { useAuthStore } from "@/store/auth";
 import { Logo } from "@/components/ui/logo";
 
-export default function AuthCompletePage() {
+// useSearchParams() requires a Suspense boundary in Next.js 15+.
+// We split the logic into AuthCompleteContent (uses the hook) and
+// wrap it below so static generation of this page doesn't bail out.
+
+function AuthCompleteContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { setAuth } = useAuthStore();
@@ -34,6 +38,10 @@ export default function AuthCompletePage() {
     }
   }, [searchParams, setAuth, router]);
 
+  return null;
+}
+
+function LoadingUI() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
       <motion.div
@@ -58,5 +66,14 @@ export default function AuthCompletePage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function AuthCompletePage() {
+  return (
+    <Suspense fallback={<LoadingUI />}>
+      <AuthCompleteContent />
+      <LoadingUI />
+    </Suspense>
   );
 }
