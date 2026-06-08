@@ -11,7 +11,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import settings
 
 config = context.config
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+
+# FIX: Alembic passes this value through Python's configparser which uses %
+# for interpolation (e.g. %(VAR)s). URL-encoded passwords like %40 (for @)
+# trigger "ValueError: invalid interpolation syntax".
+# Solution: double every % so configparser reads %% → literal %.
+# The actual DB engine calls (create_async_engine) use settings.DATABASE_URL
+# directly and are NOT affected by this escaping.
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL.replace("%", "%%"))
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
@@ -23,9 +30,11 @@ target_metadata = SQLModel.metadata
 
 
 def run_migrations_offline() -> None:
-    url = config.get_main_option("sqlalchemy.url")
+    # Use settings.DATABASE_URL directly here too — bypasses configparser
+    # entirely so the raw URL (with % signs) is handled by SQLAlchemy, not
+    # by the ini-file parser.
     context.configure(
-        url=url,
+        url=settings.DATABASE_URL,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
