@@ -16,8 +16,6 @@ def utcnow() -> datetime:
     return datetime.utcnow()
 
 
-# ─── Enums ────────────────────────────────────────────────────────────────────
-
 class UserRole(str, Enum):
     OWNER = "owner"
     ADMIN = "admin"
@@ -225,6 +223,8 @@ class Analysis(SQLModel, table=True):
 
 
 # ─── Architecture Graph ───────────────────────────────────────────────────────
+# NOTE: Python attributes use node_meta/edge_meta to avoid SQLAlchemy reserved
+#       name 'metadata'. The DB column is named 'node_meta'/'edge_meta'.
 
 class ArchitectureNode(SQLModel, table=True):
     __tablename__ = "architecture_nodes"
@@ -239,7 +239,7 @@ class ArchitectureNode(SQLModel, table=True):
     line_end: Optional[int] = Field(default=None)
     language: Optional[str] = Field(default=None, max_length=50)
     description: Optional[str] = Field(default=None, sa_column=Column(Text))
-    metadata: Optional[dict] = Field(default=None, sa_column=Column(JSON))
+    node_meta: Optional[dict] = Field(default=None, sa_column=Column(JSON))
     pos_x: Optional[float] = Field(default=None)
     pos_y: Optional[float] = Field(default=None)
     created_at: datetime = Field(default_factory=utcnow)
@@ -261,7 +261,7 @@ class ArchitectureEdge(SQLModel, table=True):
     edge_type: EdgeType
     label: Optional[str] = Field(default=None, max_length=255)
     weight: float = Field(default=1.0)
-    metadata: Optional[dict] = Field(default=None, sa_column=Column(JSON))
+    edge_meta: Optional[dict] = Field(default=None, sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=utcnow)
 
     analysis: Optional[Analysis] = Relationship(back_populates="edges")
@@ -366,7 +366,7 @@ class Payment(SQLModel, table=True):
     pay_currency: Optional[str] = Field(default=None, max_length=20)
     payment_status: str = Field(max_length=50)
     plan: SubscriptionPlan
-    metadata: Optional[dict] = Field(default=None, sa_column=Column(JSON))
+    payment_meta: Optional[dict] = Field(default=None, sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow)
 

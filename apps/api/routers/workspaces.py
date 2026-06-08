@@ -1,8 +1,10 @@
 from datetime import datetime
 from typing import Optional
-import hashlib, hmac, json
+import hashlib
+import hmac
+import json
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 from pydantic import BaseModel
@@ -18,19 +20,9 @@ from config import settings
 workspaces_router = APIRouter(prefix="/workspaces", tags=["workspaces"])
 
 
-class CreateWorkspaceRequest(BaseModel):
-    name: str
-    description: Optional[str] = None
-
-
 class UpdateWorkspaceRequest(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
-
-
-class InviteMemberRequest(BaseModel):
-    email: str
-    role: UserRole = UserRole.MEMBER
 
 
 @workspaces_router.get("/my")
@@ -42,36 +34,38 @@ async def get_my_workspaces(
         select(WorkspaceMembership).where(WorkspaceMembership.user_id == current_user.id)
     )
     memberships = result.scalars().all()
-    workspace_ids = [m.workspace_id for m in memberships]
-    if not workspace_ids:
-        return []
 
     workspaces = []
-    for ws_id in workspace_ids:
-        ws_result = await session.execute(select(Workspace).where(Workspace.id == ws_id))
+    for m in memberships:
+        ws_result = await session.execute(
+            select(Workspace).where(Workspace.id == m.workspace_id)
+        )
         ws = ws_result.scalar_one_or_none()
-        if ws:
-            sub_result = await session.execute(
-                select(Subscription).where(Subscription.workspace_id == ws_id)
-            )
-            sub = sub_result.scalar_one_or_none()
-            members_result = await session.execute(
-                select(WorkspaceMembership).where(WorkspaceMembership.workspace_id == ws_id)
-            )
-            members_count = len(members_result.scalars().all())
-            membership = next((m for m in memberships if m.workspace_id == ws_id), None)
-            workspaces.append({
-                "id": ws.id,
-                "name": ws.name,
-                "slug": ws.slug,
-                "description": ws.description,
-                "avatar_url": ws.avatar_url,
-                "owner_id": ws.owner_id,
-                "role": membership.role.value if membership else "member",
-                "plan": sub.plan.value if sub else "free",
-                "members_count": members_count,
-                "created_at": ws.created_at,
-            })
+        if not ws:
+            continue
+
+        sub_result = await session.execute(
+            select(Subscription).where(Subscription.workspace_id == ws.id)
+        )
+        sub = sub_result.scalar_one_or_none()
+
+        members_result = await session.execute(
+            select(WorkspaceMembership).where(WorkspaceMembership.workspace_id == ws.id)
+        )
+        members_count = len(members_result.scalars().all())
+
+        workspaces.append({
+            "id": ws.id,
+            "name": ws.name,
+            "slug": ws.slug,
+            "description": ws.description,
+            "avatar_url": ws.avatar_url,
+            "owner_id": ws.owner_id,
+            "role": m.role.value,
+            "plan": sub.plan.value if sub else "free",
+            "members_count": members_count,
+            "created_at": ws.created_at,
+        })
     return workspaces
 
 
@@ -81,16 +75,18 @@ async def get_workspace(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    membership_result = await session.execute(
+    m_result = await session.execute(
         select(WorkspaceMembership).where(
             WorkspaceMembership.workspace_id == workspace_id,
             WorkspaceMembership.user_id == current_user.id,
         )
     )
-    if not membership_result.scalar_one_or_none():
+    if not m_result.scalar_one_or_none():
         raise HTTPException(status_code=403, detail="Access denied")
 
-    ws_result = await session.execute(select(Workspace).where(Workspace.id == workspace_id))
+    ws_result = await session.execute(
+        select(Workspace).where(Workspace.id == workspace_id)
+    )
     ws = ws_result.scalar_one_or_none()
     if not ws:
         raise HTTPException(status_code=404, detail="Workspace not found")
@@ -118,17 +114,19 @@ async def update_workspace(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    membership_result = await session.execute(
+    m_result = await session.execute(
         select(WorkspaceMembership).where(
             WorkspaceMembership.workspace_id == workspace_id,
             WorkspaceMembership.user_id == current_user.id,
             WorkspaceMembership.role.in_([UserRole.OWNER, UserRole.ADMIN]),
         )
     )
-    if not membership_result.scalar_one_or_none():
+    if not m_result.scalar_one_or_none():
         raise HTTPException(status_code=403, detail="Only owners and admins can update workspace")
 
-    ws_result = await session.execute(select(Workspace).where(Workspace.id == workspace_id))
+    ws_result = await session.execute(
+        select(Workspace).where(Workspace.id == workspace_id)
+    )
     ws = ws_result.scalar_one_or_none()
     if not ws:
         raise HTTPException(status_code=404, detail="Workspace not found")
@@ -144,34 +142,35 @@ async def update_workspace(
 
 
 @workspaces_router.get("/{workspace_id}/members")
-async def list_workspace_members(
+async def list_members(
     workspace_id: str,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    membership_result = await session.execute(
+    m_result = await session.execute(
         select(WorkspaceMembership).where(
             WorkspaceMembership.workspace_id == workspace_id,
             WorkspaceMembership.user_id == current_user.id,
         )
     )
-    if not membership_result.scalar_one_or_none():
+    if not m_result.scalar_one_or_none():
         raise HTTPException(status_code=403, detail="Access denied")
 
     result = await session.execute(
         select(WorkspaceMembership).where(WorkspaceMembership.workspace_id == workspace_id)
     )
     memberships = result.scalars().all()
+
     members = []
     for m in memberships:
-        user_result = await session.execute(select(User).where(User.id == m.user_id))
-        user = user_result.scalar_one_or_none()
-        if user:
+        u_result = await session.execute(select(User).where(User.id == m.user_id))
+        u = u_result.scalar_one_or_none()
+        if u:
             members.append({
-                "id": user.id,
-                "name": user.name,
-                "email": user.email,
-                "avatar_url": user.avatar_url,
+                "id": u.id,
+                "name": u.name,
+                "email": u.email,
+                "avatar_url": u.avatar_url,
                 "role": m.role.value,
                 "joined_at": m.accepted_at,
             })
@@ -179,7 +178,7 @@ async def list_workspace_members(
 
 
 @workspaces_router.delete("/{workspace_id}/members/{user_id}")
-async def remove_workspace_member(
+async def remove_member(
     workspace_id: str,
     user_id: str,
     current_user: User = Depends(get_current_user),
@@ -204,7 +203,6 @@ async def remove_workspace_member(
     membership = result.scalar_one_or_none()
     if not membership:
         raise HTTPException(status_code=404, detail="Member not found")
-
     if membership.role == UserRole.OWNER and current_user.id != user_id:
         raise HTTPException(status_code=403, detail="Cannot remove workspace owner")
 
@@ -226,7 +224,7 @@ async def list_notifications(
 ):
     query = select(Notification).where(Notification.user_id == current_user.id)
     if unread_only:
-        query = query.where(Notification.is_read == False)
+        query = query.where(Notification.is_read == False)  # noqa: E712
     query = query.order_by(Notification.created_at.desc()).limit(limit)
     result = await session.execute(query)
     notifications = result.scalars().all()
@@ -245,7 +243,7 @@ async def list_notifications(
 
 
 @notifications_router.post("/{notification_id}/read")
-async def mark_notification_read(
+async def mark_read(
     notification_id: str,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
@@ -256,12 +254,12 @@ async def mark_notification_read(
             Notification.user_id == current_user.id,
         )
     )
-    notification = result.scalar_one_or_none()
-    if not notification:
+    notif = result.scalar_one_or_none()
+    if not notif:
         raise HTTPException(status_code=404, detail="Notification not found")
-    notification.is_read = True
-    notification.read_at = datetime.utcnow()
-    session.add(notification)
+    notif.is_read = True
+    notif.read_at = datetime.utcnow()
+    session.add(notif)
     await session.commit()
     return {"message": "Marked as read"}
 
@@ -274,7 +272,7 @@ async def mark_all_read(
     result = await session.execute(
         select(Notification).where(
             Notification.user_id == current_user.id,
-            Notification.is_read == False,
+            Notification.is_read == False,  # noqa: E712
         )
     )
     notifications = result.scalars().all()
@@ -284,7 +282,7 @@ async def mark_all_read(
         n.read_at = now
         session.add(n)
     await session.commit()
-    return {"message": f"Marked {len(notifications)} notifications as read"}
+    return {"message": f"Marked {len(notifications)} as read"}
 
 
 # ─── Payments ─────────────────────────────────────────────────────────────────
@@ -299,9 +297,9 @@ PLAN_PRICES = {
 }
 
 PLAN_LIMITS = {
-    SubscriptionPlan.FREE: {"repositories_limit": 1, "analyses_per_month": 5, "reports_per_month": 5},
-    SubscriptionPlan.STARTER: {"repositories_limit": 3, "analyses_per_month": 30, "reports_per_month": 30},
-    SubscriptionPlan.PRO: {"repositories_limit": 20, "analyses_per_month": 200, "reports_per_month": 100},
+    SubscriptionPlan.FREE:       {"repositories_limit": 1,    "analyses_per_month": 5,    "reports_per_month": 5},
+    SubscriptionPlan.STARTER:    {"repositories_limit": 3,    "analyses_per_month": 30,   "reports_per_month": 30},
+    SubscriptionPlan.PRO:        {"repositories_limit": 20,   "analyses_per_month": 200,  "reports_per_month": 100},
     SubscriptionPlan.ENTERPRISE: {"repositories_limit": 9999, "analyses_per_month": 9999, "reports_per_month": 9999},
 }
 
@@ -318,20 +316,21 @@ async def create_payment(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    membership_result = await session.execute(
+    m_result = await session.execute(
         select(WorkspaceMembership).where(
             WorkspaceMembership.workspace_id == body.workspace_id,
             WorkspaceMembership.user_id == current_user.id,
             WorkspaceMembership.role.in_([UserRole.OWNER, UserRole.ADMIN]),
         )
     )
-    if not membership_result.scalar_one_or_none():
+    if not m_result.scalar_one_or_none():
         raise HTTPException(status_code=403, detail="Only owners can manage billing")
 
     if body.plan == SubscriptionPlan.FREE:
         raise HTTPException(status_code=400, detail="Cannot purchase free plan")
 
     amount = PLAN_PRICES[body.plan]
+    api_base = settings.GITHUB_CALLBACK_URL.rsplit("/api/v1", 1)[0]
 
     async with httpx.AsyncClient() as client:
         resp = await client.post(
@@ -342,9 +341,9 @@ async def create_payment(
                 "pay_currency": body.pay_currency,
                 "order_id": f"archdefend_{body.workspace_id}_{body.plan.value}",
                 "order_description": f"ArchDefend {body.plan.value.capitalize()} Plan",
-                "ipn_callback_url": f"{settings.GITHUB_CALLBACK_URL.replace('/auth/github/callback', '')}/payments/webhook",
-                "success_url": f"https://archdefend.app/dashboard/billing?success=1",
-                "cancel_url": f"https://archdefend.app/dashboard/billing?cancelled=1",
+                "ipn_callback_url": f"{api_base}/api/v1/payments/webhook",
+                "success_url": f"https://archdefend.vercel.app/dashboard/billing?success=1",
+                "cancel_url": f"https://archdefend.vercel.app/dashboard/billing?cancelled=1",
             },
             headers={
                 "x-api-key": settings.NOWPAYMENTS_API_KEY,
@@ -354,10 +353,11 @@ async def create_payment(
         )
 
     if resp.status_code != 201:
-        raise HTTPException(status_code=400, detail=f"Payment creation failed: {resp.text}")
+        raise HTTPException(status_code=400, detail=f"Payment creation failed: {resp.text[:200]}")
 
     payment_data = resp.json()
 
+    # Use payment_meta (renamed from metadata to avoid SQLAlchemy conflict)
     payment = Payment(
         workspace_id=body.workspace_id,
         nowpayments_payment_id=str(payment_data["payment_id"]),
@@ -366,7 +366,7 @@ async def create_payment(
         pay_currency=body.pay_currency,
         payment_status=payment_data.get("payment_status", "waiting"),
         plan=body.plan,
-        metadata={"response": payment_data},
+        payment_meta={"response": payment_data},
     )
     session.add(payment)
     await session.commit()
@@ -382,7 +382,10 @@ async def create_payment(
 
 
 @payments_router.post("/webhook")
-async def nowpayments_webhook(request: Request, session: AsyncSession = Depends(get_session)):
+async def nowpayments_webhook(
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+):
     body = await request.body()
     sig = request.headers.get("x-nowpayments-sig", "")
 
@@ -439,13 +442,13 @@ async def get_billing(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    membership_result = await session.execute(
+    m_result = await session.execute(
         select(WorkspaceMembership).where(
             WorkspaceMembership.workspace_id == workspace_id,
             WorkspaceMembership.user_id == current_user.id,
         )
     )
-    if not membership_result.scalar_one_or_none():
+    if not m_result.scalar_one_or_none():
         raise HTTPException(status_code=403, detail="Access denied")
 
     sub_result = await session.execute(
@@ -482,30 +485,8 @@ async def get_billing(
             for p in payments
         ],
         "available_plans": [
-            {
-                "id": "starter",
-                "name": "Starter",
-                "price_usd": 19,
-                "repositories": 3,
-                "analyses": 30,
-                "reports": 30,
-            },
-            {
-                "id": "pro",
-                "name": "Pro",
-                "price_usd": 49,
-                "repositories": 20,
-                "analyses": 200,
-                "reports": 100,
-                "popular": True,
-            },
-            {
-                "id": "enterprise",
-                "name": "Enterprise",
-                "price_usd": 149,
-                "repositories": 9999,
-                "analyses": 9999,
-                "reports": 9999,
-            },
+            {"id": "starter",    "name": "Starter",    "price_usd": 19,  "repositories": 3,    "analyses": 30,   "reports": 30},
+            {"id": "pro",        "name": "Pro",         "price_usd": 49,  "repositories": 20,   "analyses": 200,  "reports": 100, "popular": True},
+            {"id": "enterprise", "name": "Enterprise",  "price_usd": 149, "repositories": 9999, "analyses": 9999, "reports": 9999},
         ],
     }

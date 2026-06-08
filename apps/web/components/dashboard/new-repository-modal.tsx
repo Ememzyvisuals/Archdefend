@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Github, Calendar, ChevronDown, Search, Lock, Star } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -17,7 +17,7 @@ interface NewRepositoryModalProps {
 }
 
 export function NewRepositoryModal({ isOpen, onClose, workspaceId }: NewRepositoryModalProps) {
-  const [selectedRepo, setSelectedRepo] = useState<string>("");
+  const [selectedRepo, setSelectedRepo] = useState("");
   const [repoSearch, setRepoSearch] = useState("");
   const [showRepoList, setShowRepoList] = useState(false);
   const [startDate, setStartDate] = useState(format(new Date(), "yyyy-MM-dd"));
@@ -45,25 +45,13 @@ export function NewRepositoryModal({ isOpen, onClose, workspaceId }: NewReposito
       onClose();
       router.push(`/dashboard/repositories/${repo.id}`);
     },
-    onError: (err: any) => {
-      toast.error(err.message || "Failed to connect repository");
-    },
+    onError: (err: any) => toast.error(err.message || "Failed to connect repository"),
   });
 
   const handleCreate = () => {
-    if (!selectedRepo) {
-      toast.error("Please select a repository");
-      return;
-    }
-    if (!workspaceId) {
-      toast.error("No workspace found");
-      return;
-    }
-    connectMutation.mutate({
-      workspace_id: workspaceId,
-      github_repo_full_name: selectedRepo,
-      branch: "main",
-    });
+    if (!selectedRepo) { toast.error("Please select a repository"); return; }
+    if (!workspaceId) { toast.error("No workspace found"); return; }
+    connectMutation.mutate({ workspace_id: workspaceId, github_repo_full_name: selectedRepo, branch: "main" });
   };
 
   const selectedRepoData = githubRepos?.find((r) => r.full_name === selectedRepo);
@@ -73,9 +61,7 @@ export function NewRepositoryModal({ isOpen, onClose, workspaceId }: NewReposito
       {isOpen && (
         <>
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
             onClick={onClose}
           />
@@ -87,13 +73,13 @@ export function NewRepositoryModal({ isOpen, onClose, workspaceId }: NewReposito
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
             <div className="w-full max-w-sm arch-card p-6" onClick={(e) => e.stopPropagation()}>
-              {/* Header */}
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-base font-bold text-white">New repository</h2>
                   <p className="text-xs text-white/35 mt-0.5">Select a repository to start analyzing.</p>
                 </div>
-                <button onClick={onClose} className="p-1.5 rounded-full text-white/30 hover:text-white/70 transition-colors">
+                <button onClick={onClose}
+                  className="p-1.5 rounded-full text-white/30 hover:text-white/70 transition-colors">
                   <X size={16} />
                 </button>
               </div>
@@ -102,7 +88,7 @@ export function NewRepositoryModal({ isOpen, onClose, workspaceId }: NewReposito
                 <div className="text-center py-6">
                   <Github size={32} className="mx-auto mb-3 text-white/20" />
                   <p className="text-sm font-medium text-white/60 mb-1">GitHub not connected</p>
-                  <p className="text-xs text-white/30 mb-4">You need to sign in with GitHub to connect repositories.</p>
+                  <p className="text-xs text-white/30 mb-4">Sign in with GitHub to connect repositories.</p>
                   <a href="/api/auth/github">
                     <button className="btn-primary text-sm px-5 py-2.5 rounded-xl mx-auto">
                       Connect GitHub
@@ -124,8 +110,7 @@ export function NewRepositoryModal({ isOpen, onClose, workspaceId }: NewReposito
                           background: "rgba(255,255,255,0.04)",
                           border: "1px solid rgba(255,255,255,0.08)",
                           color: selectedRepo ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.3)",
-                        }}
-                      >
+                        }}>
                         <div className="flex items-center gap-2 min-w-0">
                           <Github size={15} className="text-white/40 flex-shrink-0" />
                           <span className="truncate">
@@ -138,35 +123,30 @@ export function NewRepositoryModal({ isOpen, onClose, workspaceId }: NewReposito
                       {showRepoList && (
                         <div className="absolute top-full left-0 right-0 mt-2 z-20 rounded-xl overflow-hidden"
                           style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.1)", maxHeight: 280 }}>
-                          <div className="p-2 sticky top-0" style={{ background: "#141414", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                          <div className="p-2 sticky top-0"
+                            style={{ background: "#141414", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                             <div className="relative">
                               <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-white/25" />
-                              <input
-                                autoFocus
-                                value={repoSearch}
-                                onChange={(e) => setRepoSearch(e.target.value)}
+                              <input autoFocus value={repoSearch} onChange={(e) => setRepoSearch(e.target.value)}
                                 placeholder="Search repositories..."
                                 className="w-full pl-8 pr-3 py-2 rounded-lg text-xs text-white placeholder:text-white/25 outline-none"
                                 style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
-                                onClick={(e) => e.stopPropagation()}
-                              />
+                                onClick={(e) => e.stopPropagation()} />
                             </div>
                           </div>
                           <div className="overflow-y-auto" style={{ maxHeight: 200 }}>
                             {loadingRepos ? (
-                              <div className="p-4 text-center text-xs text-white/30">Loading repositories...</div>
+                              <div className="p-4 text-center text-xs text-white/30">Loading...</div>
                             ) : filtered.length === 0 ? (
                               <div className="p-4 text-center text-xs text-white/30">No repositories found</div>
                             ) : (
                               filtered.map((repo) => (
-                                <button
-                                  key={repo.full_name}
+                                <button key={repo.full_name}
                                   onClick={() => { setSelectedRepo(repo.full_name); setShowRepoList(false); setRepoSearch(""); }}
                                   className="w-full flex items-center gap-3 px-3 py-2.5 text-left transition-all"
                                   style={{ background: selectedRepo === repo.full_name ? "rgba(99,102,241,0.1)" : "transparent" }}
                                   onMouseEnter={(e) => { if (selectedRepo !== repo.full_name) e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
-                                  onMouseLeave={(e) => { if (selectedRepo !== repo.full_name) e.currentTarget.style.background = "transparent"; }}
-                                >
+                                  onMouseLeave={(e) => { if (selectedRepo !== repo.full_name) e.currentTarget.style.background = "transparent"; }}>
                                   <div className="flex-1 min-w-0">
                                     <p className="text-xs font-medium text-white truncate">{repo.full_name}</p>
                                     {repo.description && (
@@ -198,41 +178,26 @@ export function NewRepositoryModal({ isOpen, onClose, workspaceId }: NewReposito
                     <label className="text-[11px] font-semibold text-white/40 uppercase tracking-widest mb-2 block">
                       ANALYSIS START DATE
                     </label>
-                    <p className="text-[11px] text-white/25 mb-2">
-                      Used to determine the analysis baseline for drift detection.
-                    </p>
+                    <p className="text-[11px] text-white/25 mb-2">Baseline for drift detection.</p>
                     <div className="relative">
                       <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-                      <input
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
+                      <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
                         className="w-full pl-9 pr-3 py-3 rounded-xl text-sm text-white outline-none"
-                        style={{
-                          background: "rgba(255,255,255,0.04)",
-                          border: "1px solid rgba(255,255,255,0.08)",
-                          colorScheme: "dark",
-                        }}
-                      />
+                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", colorScheme: "dark" }} />
                     </div>
                   </div>
 
                   {/* Actions */}
                   <div className="flex gap-3 pt-2">
-                    <button
-                      onClick={onClose}
+                    <button onClick={onClose}
                       className="flex-1 py-3 rounded-xl text-sm font-medium transition-all"
                       style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.5)" }}>
                       Cancel
                     </button>
-                    <button
-                      onClick={handleCreate}
+                    <button onClick={handleCreate}
                       disabled={!selectedRepo || connectMutation.isPending}
                       className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all disabled:opacity-40"
-                      style={{
-                        background: selectedRepo ? "rgba(99,102,241,0.9)" : "rgba(255,255,255,0.06)",
-                        color: "white",
-                      }}>
+                      style={{ background: selectedRepo ? "rgba(99,102,241,0.9)" : "rgba(255,255,255,0.06)", color: "white" }}>
                       {connectMutation.isPending ? "Connecting..." : "Create project"}
                     </button>
                   </div>

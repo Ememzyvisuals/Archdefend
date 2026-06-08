@@ -1,13 +1,13 @@
 "use client";
 
-import { createContext, useContext, useEffect } from "react";
+import { createContext, useEffect } from "react";
 import { useAuthStore } from "@/store/auth";
 import { authApi } from "@/lib/api";
 
-const AuthContext = createContext({});
+export const AuthContext = createContext({});
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { token, setUser, clearAuth, setLoading, isAuthenticated } = useAuthStore();
+  const { setUser, clearAuth, setLoading } = useAuthStore();
 
   useEffect(() => {
     const verifySession = async () => {
@@ -38,9 +38,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
       }
     };
-
     verifySession();
-  }, []);
+  }, [setUser, clearAuth, setLoading]);
 
   return <AuthContext.Provider value={{}}>{children}</AuthContext.Provider>;
 }

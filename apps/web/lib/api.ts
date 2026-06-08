@@ -1,4 +1,5 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_PREFIX = "/api/v1";
 
 class ApiError extends Error {
   constructor(public status: number, message: string, public data?: unknown) {
@@ -21,53 +22,39 @@ async function request<T>(
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
   };
-
   if (authenticated) {
     const token = getToken();
     if (token) headers["Authorization"] = `Bearer ${token}`;
   }
-
-  const res = await fetch(`${API_URL}/api${path}`, {
-    ...options,
-    headers,
-  });
-
+  const res = await fetch(`${API_URL}${API_PREFIX}${path}`, { ...options, headers });
   if (!res.ok) {
     let detail = "Request failed";
-    try {
-      const err = await res.json();
-      detail = err.detail || err.message || detail;
-    } catch {}
+    try { const err = await res.json(); detail = err.detail || err.message || detail; } catch {}
     throw new ApiError(res.status, detail);
   }
-
   if (res.status === 204) return undefined as T;
   return res.json();
 }
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 export const authApi = {
-  getGithubUrl: () => request<{ url: string; state: string }>("/auth/github", {}, false),
+  getGithubUrl: () =>
+    request<{ url: string; state: string }>("/auth/github", {}, false),
 
   githubCallback: (code: string, state?: string) =>
     request<{ access_token: string; refresh_token: string; user: User }>(
       `/auth/github/callback?code=${code}${state ? `&state=${state}` : ""}`,
-      {},
-      false
+      {}, false
     ),
 
   googleLogin: (id_token: string) =>
     request<{ access_token: string; refresh_token: string; user: User }>(
-      "/auth/google",
-      { method: "POST", body: JSON.stringify({ id_token }) },
-      false
+      "/auth/google", { method: "POST", body: JSON.stringify({ id_token }) }, false
     ),
 
   refresh: (refresh_token: string) =>
     request<{ access_token: string; refresh_token: string }>(
-      "/auth/refresh",
-      { method: "POST", body: JSON.stringify({ refresh_token }) },
-      false
+      "/auth/refresh", { method: "POST", body: JSON.stringify({ refresh_token }) }, false
     ),
 
   me: () => request<User>("/auth/me"),
@@ -90,7 +77,8 @@ export const repositoriesApi = {
   listGithub: (page = 1) => request<GithubRepo[]>(`/repositories/github/list?page=${page}`),
   listWorkspace: (workspaceId: string) =>
     request<Repository[]>(`/repositories/workspace/${workspaceId}`),
-  get: (id: string) => request<{ repository: Repository; analyses: Analysis[] }>(`/repositories/${id}`),
+  get: (id: string) =>
+    request<{ repository: Repository; analyses: Analysis[] }>(`/repositories/${id}`),
   connect: (data: { workspace_id: string; github_repo_full_name: string; branch?: string }) =>
     request<Repository>("/repositories/connect", { method: "POST", body: JSON.stringify(data) }),
   analyze: (id: string) =>
@@ -122,19 +110,20 @@ export const reportsApi = {
     analysis_id: string;
     report_type: string;
     export_format?: string;
-  }) => request<{ report_id: string; status: string }>("/reports/generate", { method: "POST", body: JSON.stringify(data) }),
+  }) => request<{ report_id: string; status: string }>(
+    "/reports/generate", { method: "POST", body: JSON.stringify(data) }
+  ),
   listByRepo: (repoId: string) => request<Report[]>(`/reports/repository/${repoId}`),
   get: (id: string) => request<Report>(`/reports/${id}`),
-  exportPdf: (id: string) => `${API_URL}/api/reports/${id}/export/pdf`,
-  exportMarkdown: (id: string) => `${API_URL}/api/reports/${id}/export/markdown`,
+  exportPdfUrl: (id: string) => `${API_URL}${API_PREFIX}/reports/${id}/export/pdf`,
+  exportMarkdownUrl: (id: string) => `${API_URL}${API_PREFIX}/reports/${id}/export/markdown`,
 };
 
 // ─── Notifications ────────────────────────────────────────────────────────────
 export const notificationsApi = {
   list: (unreadOnly = false) =>
     request<Notification[]>(`/notifications/?unread_only=${unreadOnly}`),
-  markRead: (id: string) =>
-    request(`/notifications/${id}/read`, { method: "POST" }),
+  markRead: (id: string) => request(`/notifications/${id}/read`, { method: "POST" }),
   markAllRead: () => request("/notifications/read-all", { method: "POST" }),
 };
 

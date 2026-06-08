@@ -1,6 +1,6 @@
 """
 ArchDefend Analysis Worker
-Background task that runs repository analysis pipeline.
+Background task that runs the full repository analysis pipeline.
 """
 from __future__ import annotations
 import asyncio
@@ -13,7 +13,8 @@ from sqlmodel import select
 from database import AsyncSessionLocal
 from models import (
     Analysis, AnalysisStatus, Repository, ArchitectureNode, ArchitectureEdge,
-    SecurityFinding, SecuritySeverity, NodeType, EdgeType, Notification, NotificationType, User
+    SecurityFinding, SecuritySeverity, NodeType, EdgeType,
+    Notification, NotificationType, User
 )
 from services.analysis_engine import clone_repository, analyze_repository
 from services.ai_service import analyze_architecture, scan_security
@@ -23,13 +24,12 @@ log = structlog.get_logger()
 
 
 async def trigger_analysis(analysis_id: str) -> None:
-    """Entry point for background analysis task."""
-    log.info("Analysis triggered", analysis_id=analysis_id)
+    log.info("analysis_triggered", analysis_id=analysis_id)
     async with AsyncSessionLocal() as session:
         try:
             await _run_analysis(analysis_id, session)
         except Exception as e:
-            log.error("Analysis failed with unhandled error", analysis_id=analysis_id, error=str(e))
+            log.error("analysis_unhandled_error", analysis_id=analysis_id, error=str(e))
             await _mark_failed(analysis_id, str(e), session)
 
 
@@ -38,7 +38,7 @@ async def _update_status(
     status: AnalysisStatus,
     progress: int,
     session: AsyncSession,
-    **kwargs
+    **kwargs,
 ) -> None:
     result = await session.execute(select(Analysis).where(Analysis.id == analysis_id))
     analysis = result.scalar_one_or_none()
@@ -54,40 +54,46 @@ async def _update_status(
 async def _mark_failed(analysis_id: str, error: str, session: AsyncSession) -> None:
     result = await session.execute(select(Analysis).where(Analysis.id == analysis_id))
     analysis = result.scalar_one_or_none()
-    if analysis:
-        analysis.status = AnalysisStatus.FAILED
-        analysis.error_message = error
-        analysis.progress_percent = 0
-        session.add(analysis)
+    if not analysis:
+        return
 
-        repo_result = await session.execute(
-            select(Repository).where(Repository.id == analysis.repository_id)
+    analysis.status = AnalysisStatus.FAILED
+    analysis.error_message = error[:2000]
+    analysis.progress_percent = 0
+    session.add(analysis)
+
+    repo_result = await session.execute(
+        select(Repository).where(Repository.id == analysis.repository_id)
+    )
+    repo = repo_result.scalar_one_or_none()
+
+    user_result = await session.execute(
+        select(User).where(User.id == analysis.triggered_by)
+    )
+    user = user_result.scalar_one_or_none()
+
+    if user and repo:
+        notif = Notification(
+            user_id=user.id,
+            type=NotificationType.ANALYSIS_FAILED,
+            title="Analysis Failed",
+            message=f"Analysis of {repo.full_name} failed: {error[:200]}",
+            data={"analysis_id": analysis_id, "repository_id": str(analysis.repository_id)},
         )
-        repo = repo_result.scalar_one_or_none()
+        session.add(notif)
 
-        user_result = await session.execute(select(User).where(User.id == analysis.triggered_by))
-        user = user_result.scalar_one_or_none()
-
-        if user and repo:
-            notification = Notification(
-                user_id=user.id,
-                type=NotificationType.ANALYSIS_FAILED,
-                title="Analysis Failed",
-                message=f"Analysis of {repo.full_name} failed: {error[:200]}",
-                data={"analysis_id": analysis_id, "repository_id": analysis.repository_id},
-            )
-            session.add(notification)
-
-        await session.commit()
+    await session.commit()
 
 
 async def _run_analysis(analysis_id: str, session: AsyncSession) -> None:
+    # Load analysis
     result = await session.execute(select(Analysis).where(Analysis.id == analysis_id))
     analysis = result.scalar_one_or_none()
     if not analysis:
-        log.error("Analysis not found", analysis_id=analysis_id)
+        log.error("analysis_not_found", analysis_id=analysis_id)
         return
 
+    # Load repository
     repo_result = await session.execute(
         select(Repository).where(Repository.id == analysis.repository_id)
     )
@@ -96,30 +102,34 @@ async def _run_analysis(analysis_id: str, session: AsyncSession) -> None:
         await _mark_failed(analysis_id, "Repository not found", session)
         return
 
-    user_result = await session.execute(select(User).where(User.id == analysis.triggered_by))
+    # Load user for GitHub token
+    user_result = await session.execute(
+        select(User).where(User.id == analysis.triggered_by)
+    )
     user = user_result.scalar_one_or_none()
     if not user or not user.github_access_token:
-        await _mark_failed(analysis_id, "GitHub access token not available", session)
+        await _mark_failed(analysis_id, "GitHub access token not available. Please reconnect GitHub.", session)
         return
 
-    # Check repo size
+    # Size check
     if repo.size_kb > settings.MAX_REPO_SIZE_MB * 1024:
         await _mark_failed(
             analysis_id,
-            f"Repository too large ({repo.size_kb // 1024} MB). Maximum: {settings.MAX_REPO_SIZE_MB} MB",
+            f"Repository too large ({repo.size_kb // 1024} MB). Max: {settings.MAX_REPO_SIZE_MB} MB",
             session,
         )
         return
 
+    # Mark started
     analysis.started_at = datetime.utcnow()
     session.add(analysis)
     await session.commit()
 
     clone_dir = None
     try:
-        # Step 1: Clone
+        # ── Step 1: Clone ──────────────────────────────────────────────────
         await _update_status(analysis_id, AnalysisStatus.CLONING, 5, session)
-        log.info("Cloning repository", repo=repo.full_name)
+        log.info("cloning_repo", repo=repo.full_name)
 
         clone_dir = await clone_repository(
             full_name=repo.full_name,
@@ -129,56 +139,68 @@ async def _run_analysis(analysis_id: str, session: AsyncSession) -> None:
             timeout=settings.CLONE_TIMEOUT_SECONDS,
         )
 
-        # Step 2: Parse
+        # ── Step 2: Parse ──────────────────────────────────────────────────
         await _update_status(analysis_id, AnalysisStatus.PARSING, 15, session)
-        log.info("Parsing repository", repo=repo.full_name)
+        log.info("parsing_repo", repo=repo.full_name)
 
-        async def on_progress(pct: int):
+        async def on_progress(pct: int) -> None:
             await _update_status(analysis_id, AnalysisStatus.PARSING, pct, session)
 
         analysis_result = await analyze_repository(clone_dir, on_progress=on_progress)
 
-        # Step 3: Build graph
+        # ── Step 3: Build Graph ────────────────────────────────────────────
         await _update_status(analysis_id, AnalysisStatus.GRAPHING, 75, session)
-        log.info("Building graph", nodes=len(analysis_result.symbols))
+        log.info("building_graph", nodes=len(analysis_result.symbols))
 
-        # Save nodes
+        # Save nodes — use node_meta (renamed from metadata to avoid SQLAlchemy conflict)
         node_batch = []
         for sym in analysis_result.symbols[:5000]:
+            try:
+                node_type = NodeType(sym.symbol_type)
+            except ValueError:
+                node_type = NodeType.MODULE
+
             node = ArchitectureNode(
                 analysis_id=analysis_id,
-                node_id=sym.symbol_id,
+                node_id=sym.symbol_id[:500],
                 name=sym.name[:255],
-                type=NodeType(sym.symbol_type) if sym.symbol_type in NodeType._value2member_map_ else NodeType.MODULE,
+                type=node_type,
                 file_path=sym.file_path[:1000] if sym.file_path else None,
                 line_start=sym.line_start,
                 line_end=sym.line_end,
                 language=sym.language,
-                pos_x=sym.metadata.get("pos_x"),
-                pos_y=sym.metadata.get("pos_y"),
-                metadata=sym.metadata,
+                pos_x=sym.metadata.get("pos_x") if sym.metadata else None,
+                pos_y=sym.metadata.get("pos_y") if sym.metadata else None,
+                node_meta=sym.metadata,  # renamed field — not 'metadata'
             )
             node_batch.append(node)
 
         session.add_all(node_batch)
         await session.flush()
 
+        # Save edges — use edge_meta (renamed from metadata)
         edge_batch = []
         for edge in analysis_result.edges[:10000]:
+            try:
+                edge_type = EdgeType(edge.edge_type)
+            except ValueError:
+                edge_type = EdgeType.DEPENDS_ON
+
             arch_edge = ArchitectureEdge(
                 analysis_id=analysis_id,
                 source_id=edge.source_id[:500],
                 target_id=edge.target_id[:500],
-                edge_type=EdgeType(edge.edge_type) if edge.edge_type in EdgeType._value2member_map_ else EdgeType.DEPENDS_ON,
+                edge_type=edge_type,
                 label=edge.label[:255] if edge.label else None,
                 weight=edge.weight,
+                edge_meta=None,  # renamed field
             )
             edge_batch.append(arch_edge)
 
         session.add_all(edge_batch)
         await session.flush()
 
-        # Step 4: AI Processing
+        # ── Step 4: AI Processing ──────────────────────────────────────────
         await _update_status(analysis_id, AnalysisStatus.AI_PROCESSING, 82, session)
 
         symbols_summary = (
@@ -190,20 +212,24 @@ async def _run_analysis(analysis_id: str, session: AsyncSession) -> None:
 
         try:
             ai_analysis = await analyze_architecture(
-                repo_summary=f"{repo.full_name}: {repo.description or 'No description'}. {analysis_result.architecture_summary}",
+                repo_summary=(
+                    f"{repo.full_name}: {repo.description or 'No description'}. "
+                    f"{analysis_result.architecture_summary}"
+                ),
                 tech_stack=analysis_result.tech_stack,
                 symbols_summary=symbols_summary,
             )
-        except Exception as e:
-            log.warning("AI analysis failed, using basic summary", error=str(e))
+        except Exception as ai_err:
+            log.warning("ai_analysis_failed", error=str(ai_err))
             ai_analysis = {"overview": analysis_result.architecture_summary}
 
-        # Security scan
+        # ── Step 5: Security Scan ──────────────────────────────────────────
         await _update_status(analysis_id, AnalysisStatus.AI_PROCESSING, 90, session)
+
         code_samples = []
-        files_scanned = set()
+        scanned_paths: set = set()
         for sym in analysis_result.symbols:
-            if sym.file_path and sym.file_path not in files_scanned:
+            if sym.file_path and sym.file_path not in scanned_paths:
                 full_path = os.path.join(clone_dir, sym.file_path)
                 if os.path.exists(full_path):
                     try:
@@ -214,7 +240,7 @@ async def _run_analysis(analysis_id: str, session: AsyncSession) -> None:
                             "language": sym.language,
                             "content": content[:3000],
                         })
-                        files_scanned.add(sym.file_path)
+                        scanned_paths.add(sym.file_path)
                         if len(code_samples) >= 20:
                             break
                     except Exception:
@@ -240,10 +266,10 @@ async def _run_analysis(analysis_id: str, session: AsyncSession) -> None:
                     recommendation=finding.get("recommendation"),
                 )
                 session.add(sf)
-        except Exception as e:
-            log.warning("Security scan failed", error=str(e))
+        except Exception as sec_err:
+            log.warning("security_scan_failed", error=str(sec_err))
 
-        # Finalize
+        # ── Finalize ───────────────────────────────────────────────────────
         result2 = await session.execute(select(Analysis).where(Analysis.id == analysis_id))
         analysis = result2.scalar_one()
         analysis.status = AnalysisStatus.COMPLETED
@@ -258,27 +284,30 @@ async def _run_analysis(analysis_id: str, session: AsyncSession) -> None:
         analysis.completed_at = datetime.utcnow()
         session.add(analysis)
 
-        # Send completion notification
+        # Completion notification
         if user:
-            notification = Notification(
+            notif = Notification(
                 user_id=user.id,
                 type=NotificationType.ANALYSIS_COMPLETED,
                 title="Analysis Complete",
-                message=f"{repo.full_name} analysis complete. Found {len(analysis_result.symbols)} symbols across {analysis_result.files_parsed} files.",
+                message=(
+                    f"{repo.full_name} analyzed. "
+                    f"Found {len(analysis_result.symbols)} symbols across {analysis_result.files_parsed} files."
+                ),
                 data={
                     "analysis_id": analysis_id,
-                    "repository_id": repo.id,
+                    "repository_id": str(repo.id),
                     "nodes": len(analysis_result.symbols),
                     "files": analysis_result.files_parsed,
                 },
             )
-            session.add(notification)
+            session.add(notif)
 
         await session.commit()
-        log.info("Analysis completed", analysis_id=analysis_id, nodes=len(analysis_result.symbols))
+        log.info("analysis_completed", analysis_id=analysis_id, nodes=len(analysis_result.symbols))
 
     except Exception as e:
-        log.error("Analysis pipeline error", analysis_id=analysis_id, error=str(e))
+        log.error("analysis_pipeline_error", analysis_id=analysis_id, error=str(e))
         await _mark_failed(analysis_id, str(e), session)
     finally:
         if clone_dir and os.path.exists(clone_dir):

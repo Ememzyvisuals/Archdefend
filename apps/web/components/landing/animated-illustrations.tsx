@@ -74,7 +74,7 @@ export function AnimatedClock() {
 
 // ─── X Calendar (Problem 02 - consistency breaks) ────────────────────────────
 export function AnimatedCalendar() {
-  const cells = [true, true, true, true, true, true];
+  
   return (
     <div className="flex items-center justify-center h-full">
       <svg width="56" height="60" viewBox="0 0 56 60" fill="none">

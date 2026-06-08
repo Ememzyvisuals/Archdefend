@@ -1,0 +1,28 @@
+:: ArchDefend — Force push to GitHub from Windows CMD
+:: Run each line one at a time in CMD
+
+:: 1. Go to project folder
+cd Desktop\Archdefend
+
+:: 2. Set your identity (only needed once per machine)
+git config --global user.name "Ememzyvisuals"
+git config --global user.email "ememzylike@gmail.com"
+
+:: 3. Initialize git if not already done
+git init
+
+:: 4. Set remote (skip if already set — it will show an error you can ignore)
+git remote add origin https://github.com/Ememzyvisuals/archdefend.git
+
+:: 5. If remote already exists and you need to update it
+git remote set-url origin https://github.com/Ememzyvisuals/archdefend.git
+
+:: 6. Stage everything
+git add .
+
+:: 7. Commit
+git commit -m "feat: ArchDefend v1.0.0 production codebase"
+
+:: 8. Force push — overwrites everything in the repo
+git branch -M main
+git push -f origin main

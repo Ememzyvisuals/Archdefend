@@ -4,7 +4,7 @@ import { Toaster } from "react-hot-toast";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://archdefend.app";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://archdefend.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(APP_URL),
@@ -13,20 +13,13 @@ export const metadata: Metadata = {
     template: "%s | ArchDefend",
   },
   description:
-    "Transform any GitHub repository into a living architecture intelligence platform. Understand, document, monitor, and defend your software architecture with AI.",
+    "Transform any GitHub repository into a living architecture intelligence platform. " +
+    "Understand, document, monitor, and defend your software architecture with AI.",
   keywords: [
-    "architecture intelligence",
-    "codebase analysis",
-    "software architecture",
-    "repository visualization",
-    "GitHub architecture mapping",
-    "dependency analysis",
-    "engineering intelligence",
-    "code understanding",
-    "technical due diligence",
-    "architecture monitoring",
-    "AI code analysis",
-    "architecture documentation",
+    "architecture intelligence", "codebase analysis", "software architecture",
+    "repository visualization", "GitHub architecture mapping", "dependency analysis",
+    "engineering intelligence", "code understanding", "technical due diligence",
+    "architecture monitoring", "AI code analysis",
   ],
   authors: [{ name: "Ememzyvisuals", url: APP_URL }],
   creator: "Ememzyvisuals",
@@ -34,7 +27,10 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
-    googleBot: { index: true, follow: true, "max-video-preview": -1, "max-image-preview": "large", "max-snippet": -1 },
+    googleBot: {
+      index: true, follow: true,
+      "max-video-preview": -1, "max-image-preview": "large", "max-snippet": -1,
+    },
   },
   openGraph: {
     type: "website",
@@ -43,7 +39,7 @@ export const metadata: Metadata = {
     siteName: "ArchDefend",
     title: "ArchDefend – Architecture Intelligence For Real Engineering Teams",
     description: "Transform any GitHub repository into a living architecture intelligence platform.",
-    images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: "ArchDefend - Architecture Intelligence" }],
+    images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: "ArchDefend" }],
   },
   twitter: {
     card: "summary_large_image",
@@ -51,23 +47,10 @@ export const metadata: Metadata = {
     description: "Transform any GitHub repository into a living architecture intelligence platform.",
     images: ["/og-image.jpg"],
     creator: "@ememzyvisuals",
-    site: "@ememzyvisuals",
   },
   icons: {
-    icon: [
-      { url: "/favicon.ico", sizes: "any" },
-      { url: "/icons/icon-32.png", sizes: "32x32", type: "image/png" },
-      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
-    ],
-    apple: [{ url: "/icons/apple-icon-180.png", sizes: "180x180", type: "image/png" }],
+    icon: "/favicon.ico",
     shortcut: "/favicon.ico",
-  },
-  manifest: "/manifest.json",
-  verification: {
-    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
-    other: {
-      "msvalidate.01": process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION || "",
-    },
   },
 };
 
@@ -93,17 +76,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               url: APP_URL,
               applicationCategory: "DeveloperApplication",
               operatingSystem: "Web",
-              offers: {
-                "@type": "Offer",
-                price: "0",
-                priceCurrency: "USD",
-                description: "Free tier available",
-              },
-              creator: {
-                "@type": "Organization",
-                name: "Ememzyvisuals",
-                url: APP_URL,
-              },
+              offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+              creator: { "@type": "Organization", name: "Ememzyvisuals", url: APP_URL },
             }),
           }}
         />
@@ -123,7 +97,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   fontSize: "14px",
                 },
                 success: { iconTheme: { primary: "#10b981", secondary: "#111111" } },
-                error: { iconTheme: { primary: "#ef4444", secondary: "#111111" } },
+                error:   { iconTheme: { primary: "#ef4444", secondary: "#111111" } },
               }}
             />
           </AuthProvider>

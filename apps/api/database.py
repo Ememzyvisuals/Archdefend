@@ -4,12 +4,13 @@ from sqlalchemy.pool import NullPool
 from sqlmodel import SQLModel
 from config import settings
 
+# Supabase transaction pooler requires NullPool (no persistent connections)
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
     future=True,
-    poolclass=NullPool if settings.is_production else None,
-    pool_pre_ping=True,
+    poolclass=NullPool,
+    connect_args={"statement_cache_size": 0},
 )
 
 AsyncSessionLocal = async_sessionmaker(
@@ -22,6 +23,7 @@ AsyncSessionLocal = async_sessionmaker(
 
 
 async def init_db() -> None:
+    """Create all tables that don't exist yet (Alembic handles migrations)."""
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
 
