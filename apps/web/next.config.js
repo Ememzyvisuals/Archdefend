@@ -1,7 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  output: "standalone",
+  // NOTE: output:"standalone" removed — it's for Docker/self-hosted only.
+  // On Vercel it triggers a file-trace copy of (marketing)/page_client-reference-manifest.js
+  // which Next.js 15.5 doesn't generate for route groups → ENOENT → build fails.
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "avatars.githubusercontent.com" },
